@@ -1,0 +1,11 @@
+{
+  "files": [
+    "SKILL.md",
+    "meta.json",
+    "schema.json",
+    "seed/items/007-casino-royale-2006.json",
+    "seed/items/blade-runner-2049-2017.json",
+    "seed/items/perfect-days-2023.json",
+    "views/cinema.html"
+  ]
+}

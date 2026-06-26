@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
-import { listCollections, readJson, summarizeSchema, contentSha } from "../scripts/lib/collections.mjs";
+import { listCollections, readJson, summarizeSchema, contentSha, bundleFiles, MANIFEST_FILE } from "../scripts/lib/collections.mjs";
 import { isSafeRecordId, validateSchema, validateRecord } from "../scripts/lib/validateSchema.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -61,4 +61,22 @@ test("registry has at least one collection and stable contentSha", () => {
   const cols = listCollections(REPO_ROOT);
   assert.ok(cols.length >= 1);
   assert.equal(contentSha(exampleDir), contentSha(exampleDir));
+});
+
+test("bundleFiles lists the importable set and excludes generated files", () => {
+  const files = bundleFiles(exampleDir);
+  for (const expected of ["SKILL.md", "schema.json", "meta.json", "views/cinema.html"]) {
+    assert.ok(files.includes(expected), `expected ${expected}`);
+  }
+  assert.ok(
+    files.some((file) => file.startsWith("seed/items/")),
+    "expected seed items",
+  );
+  assert.ok(!files.includes(MANIFEST_FILE), "manifest.json must be excluded");
+  assert.ok(!files.includes("screenshot.png"), "screenshot.png must be excluded");
+});
+
+test("the committed manifest matches the current bundle", () => {
+  const manifest = readJson(path.join(exampleDir, MANIFEST_FILE));
+  assert.deepEqual(manifest.files, bundleFiles(exampleDir));
 });

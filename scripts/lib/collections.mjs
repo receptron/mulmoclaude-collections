@@ -7,6 +7,8 @@ import path from "node:path";
 
 export const COLLECTIONS_DIR = "collections";
 const SCREENSHOT_FILE = "screenshot.png";
+// Generated/non-bundle files excluded from the importable bundle + contentSha.
+export const MANIFEST_FILE = "manifest.json";
 
 const isDir = (p) => {
   try {
@@ -42,7 +44,7 @@ export function bundleFiles(dir, current = dir) {
     .flatMap((name) => {
       const abs = path.join(current, name);
       if (isDir(abs)) return bundleFiles(dir, abs);
-      if (name === SCREENSHOT_FILE) return [];
+      if (name === SCREENSHOT_FILE || name === MANIFEST_FILE) return [];
       return [path.relative(dir, abs).split(path.sep).join("/")];
     })
     .sort();
