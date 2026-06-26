@@ -1,18 +1,29 @@
 #!/usr/bin/env node
-// Regenerate index.json from collections/<author>/<slug>/.
+// Regenerate index.json and each collection's manifest.json from
+// collections/<author>/<slug>/.
 // Usage:
-//   node scripts/build-index.mjs            # write index.json
-//   node scripts/build-index.mjs --check    # fail if index.json is stale (CI)
+//   node scripts/build-index.mjs            # write index.json + manifests
+//   node scripts/build-index.mjs --check    # fail if any generated file is stale (CI)
+//
+// manifest.json lists the importable bundle files (POSIX relative paths) so the
+// host can fetch a collection by raw URL without a directory listing.
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { contentSha, listCollections, listSeedIds, readJson, summarizeSchema } from "./lib/collections.mjs";
+import { bundleFiles, contentSha, listCollections, listSeedIds, MANIFEST_FILE, readJson, summarizeSchema } from "./lib/collections.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const REGISTRY = "receptron/mulmoclaude-collections";
 const INDEX_PATH = path.join(REPO_ROOT, "index.json");
+
+const serialize = (obj) => `${JSON.stringify(obj, null, 2)}\n`;
+const manifestPath = (dir) => path.join(dir, MANIFEST_FILE);
+
+// The importable file list the host fetches at import time. screenshot.png and
+// manifest.json itself are excluded by bundleFiles.
+const manifestFor = (dir) => ({ files: bundleFiles(dir) });
 
 function buildEntry({ author, slug, id, dir }) {
   const meta = readJson(path.join(dir, "meta.json"));
@@ -42,34 +53,44 @@ function buildEntry({ author, slug, id, dir }) {
   return entry;
 }
 
-function buildIndex() {
-  const collections = listCollections(REPO_ROOT)
-    .map(buildEntry)
-    .sort((a, b) => a.id.localeCompare(b.id));
-  return { schemaVersion: 1, generatedAt: new Date().toISOString(), registry: REGISTRY, collections };
+function buildIndex(collections) {
+  const entries = collections.map(buildEntry).sort((a, b) => a.id.localeCompare(b.id));
+  return { schemaVersion: 1, generatedAt: new Date().toISOString(), registry: REGISTRY, collections: entries };
 }
 
 // Compare ignoring generatedAt so --check is stable across runs.
-function sansTimestamp(index) {
-  return JSON.stringify({ ...index, generatedAt: "" });
+const sansTimestamp = (index) => JSON.stringify({ ...index, generatedAt: "" });
+
+function writeArtifacts(collections) {
+  for (const collection of collections) writeFileSync(manifestPath(collection.dir), serialize(manifestFor(collection.dir)));
+  writeFileSync(INDEX_PATH, serialize(buildIndex(collections)));
+  console.log(`Wrote index.json + ${collections.length} manifest(s).`);
+}
+
+function staleArtifacts(collections) {
+  const stale = [];
+  for (const collection of collections) {
+    const have = existsSync(manifestPath(collection.dir)) ? readJson(manifestPath(collection.dir)) : null;
+    if (!have || JSON.stringify(have) !== JSON.stringify(manifestFor(collection.dir))) stale.push(`${collection.id}/manifest.json`);
+  }
+  const current = existsSync(INDEX_PATH) ? readFileSync(INDEX_PATH, "utf-8") : "";
+  if (!current || sansTimestamp(JSON.parse(current)) !== sansTimestamp(buildIndex(collections))) stale.push("index.json");
+  return stale;
 }
 
 function main() {
   const check = process.argv.includes("--check");
-  const next = buildIndex();
-  const serialized = `${JSON.stringify(next, null, 2)}\n`;
+  const collections = listCollections(REPO_ROOT);
   if (check) {
-    const current = existsSync(INDEX_PATH) ? readFileSync(INDEX_PATH, "utf-8") : "";
-    const stale = !current || sansTimestamp(JSON.parse(current)) !== sansTimestamp(next);
-    if (stale) {
-      console.error("index.json is stale — run `node scripts/build-index.mjs` and commit.");
+    const stale = staleArtifacts(collections);
+    if (stale.length) {
+      console.error(`stale generated files — run \`node scripts/build-index.mjs\` and commit:\n  ${stale.join("\n  ")}`);
       process.exit(1);
     }
-    console.log(`index.json up to date (${next.collections.length} collections).`);
+    console.log(`index.json + ${collections.length} manifest(s) up to date.`);
     return;
   }
-  writeFileSync(INDEX_PATH, serialized);
-  console.log(`Wrote index.json (${next.collections.length} collections).`);
+  writeArtifacts(collections);
 }
 
 main();
