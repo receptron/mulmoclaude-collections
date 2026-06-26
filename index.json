@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-26T20:16:58.206Z",
+  "registry": "receptron/mulmoclaude-collections",
+  "collections": [
+    {
+      "id": "isamu/movies",
+      "author": "isamu",
+      "slug": "movies",
+      "title": "映画リスト",
+      "icon": "movie",
+      "description": "観たい・観た映画を記録するコレクション。ジャンル/テーマ/監督/視聴方法/評価/鑑賞日を管理し、Netflix 風の『シネマ』カスタムビューでサムネ表示できる。",
+      "version": "1.0.0",
+      "tags": [
+        "entertainment",
+        "personal",
+        "movies"
+      ],
+      "license": "MIT",
+      "fieldCount": 15,
+      "views": [
+        "シネマ"
+      ],
+      "hasSeed": true,
+      "seedCount": 3,
+      "path": "collections/isamu/movies",
+      "contentSha": "305247fb2e1432da"
+    }
+  ]
+}

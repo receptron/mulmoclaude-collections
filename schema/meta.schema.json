@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/receptron/mulmoclaude-collections/schema/meta.schema.json",
+  "title": "Collection meta.json",
+  "description": "Distribution metadata for one collection under collections/<author>/<slug>/.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["author", "slug", "version", "title", "description", "license"],
+  "properties": {
+    "author": {
+      "type": "string",
+      "description": "Contributor GitHub login. CI verifies it equals the PR author and the path <author> segment.",
+      "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Collection slug. lowercase letters/digits/hyphens; no mc- prefix; no leading/trailing hyphen.",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    },
+    "version": {
+      "type": "string",
+      "description": "semver. Breaking schema change = major.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+      "maxItems": 12
+    },
+    "license": { "type": "string", "minLength": 1, "description": "SPDX-ish identifier (e.g. MIT, CC-BY-4.0)." },
+    "dataConsent": {
+      "type": "boolean",
+      "description": "Required true when seed/ contains the contributor's real data — affirms ownership/consent to publish."
+    }
+  }
+}

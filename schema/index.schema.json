@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/receptron/mulmoclaude-collections/schema/index.schema.json",
+  "title": "Registry index.json",
+  "description": "Generated catalog the MulmoClaude backend reads (one GET). Public versioned contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedAt", "registry", "collections"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "registry": { "type": "string", "description": "owner/repo of this registry." },
+    "collections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "author", "slug", "title", "icon", "description", "version", "license", "fieldCount", "hasSeed", "path", "contentSha"],
+        "properties": {
+          "id": { "type": "string", "description": "<author>/<slug> — global identity." },
+          "author": { "type": "string" },
+          "slug": { "type": "string" },
+          "title": { "type": "string" },
+          "icon": { "type": "string", "description": "Material Symbols name from schema.json." },
+          "description": { "type": "string" },
+          "version": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "license": { "type": "string" },
+          "fieldCount": { "type": "integer", "minimum": 0 },
+          "views": { "type": "array", "items": { "type": "string" }, "description": "Custom view labels." },
+          "hasSeed": { "type": "boolean" },
+          "seedCount": { "type": "integer", "minimum": 0 },
+          "screenshot": { "type": "string", "description": "repo-relative path, omitted when absent." },
+          "path": { "type": "string", "description": "repo-relative collection dir." },
+          "contentSha": { "type": "string", "description": "stable hash of bundle (screenshot excluded) for update detection." }
+        }
+      }
+    }
+  }
+}

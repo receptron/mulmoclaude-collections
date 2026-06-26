@@ -1,0 +1,43 @@
+name: build-index
+
+# Regenerate index.json on every push to main and publish it (plus the JSON
+# Schemas) to GitHub Pages, so the MulmoClaude backend reads a stable URL
+# without us bot-committing into main (R2). Requires Pages enabled for the repo
+# (Settings → Pages → Source: GitHub Actions).
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate index.json
+        run: node scripts/build-index.mjs
+      - name: Assemble site (index.json + schemas)
+        run: |
+          mkdir -p _site/schema
+          cp index.json _site/index.json
+          cp schema/*.json _site/schema/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

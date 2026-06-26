@@ -1,0 +1,10 @@
+{
+  "author": "isamu",
+  "slug": "movies",
+  "version": "1.0.0",
+  "title": "映画リスト",
+  "description": "観たい・観た映画を記録するコレクション。ジャンル/テーマ/監督/視聴方法/評価/鑑賞日を管理し、Netflix 風の『シネマ』カスタムビューでサムネ表示できる。",
+  "tags": ["entertainment", "personal", "movies"],
+  "license": "MIT",
+  "dataConsent": true
+}

@@ -1,0 +1,116 @@
+{
+  "title": "映画リスト",
+  "icon": "movie",
+  "dataPath": "data/movies/items",
+  "primaryKey": "id",
+  "fields": {
+    "id": {
+      "type": "string",
+      "label": "ID",
+      "primary": true,
+      "required": true
+    },
+    "title": {
+      "type": "string",
+      "label": "タイトル",
+      "required": true
+    },
+    "originalTitle": {
+      "type": "string",
+      "label": "原題"
+    },
+    "year": {
+      "type": "number",
+      "label": "公開年"
+    },
+    "genre": {
+      "type": "enum",
+      "label": "ジャンル",
+      "values": [
+        "アクション",
+        "SF",
+        "ドラマ",
+        "コメディ",
+        "恋愛",
+        "サスペンス・スリラー",
+        "ホラー",
+        "アニメ",
+        "ドキュメンタリー",
+        "ファンタジー",
+        "その他"
+      ]
+    },
+    "theme": {
+      "type": "enum",
+      "label": "テーマ",
+      "values": [
+        "CIA・中東・戦争",
+        "スパイ・アクション",
+        "マフィア・犯罪",
+        "アクション・冒険",
+        "SF",
+        "サスペンス・スリラー",
+        "ヒューマンドラマ",
+        "音楽",
+        "アート・芸術家",
+        "日本映画",
+        "恋愛・ミュージカル",
+        "コメディ",
+        "ドキュメンタリー"
+      ]
+    },
+    "director": {
+      "type": "string",
+      "label": "監督"
+    },
+    "country": {
+      "type": "string",
+      "label": "製作国"
+    },
+    "runtime": {
+      "type": "number",
+      "label": "上映時間（分）"
+    },
+    "platform": {
+      "type": "enum",
+      "label": "視聴方法",
+      "values": [
+        "劇場",
+        "Netflix",
+        "Amazon Prime Video",
+        "Disney+",
+        "U-NEXT",
+        "Apple TV+",
+        "Hulu",
+        "Blu-ray / DVD",
+        "その他"
+      ]
+    },
+    "watched": {
+      "type": "boolean",
+      "label": "鑑賞済み"
+    },
+    "rating": {
+      "type": "enum",
+      "label": "評価（1〜5）",
+      "values": ["1", "2", "3", "4", "5"],
+      "when": { "field": "watched", "in": ["true"] }
+    },
+    "watchDate": {
+      "type": "date",
+      "label": "鑑賞日",
+      "when": { "field": "watched", "in": ["true"] }
+    },
+    "poster": {
+      "type": "image",
+      "label": "ポスター"
+    },
+    "notes": {
+      "type": "text",
+      "label": "メモ・感想"
+    }
+  },
+  "views": [
+    { "id": "cinema", "label": "シネマ", "icon": "theaters", "file": "views/cinema.html", "capabilities": ["read"] }
+  ]
+}

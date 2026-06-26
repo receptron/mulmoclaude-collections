@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --bg: #0b0b10;
+        --bg2: #15151d;
+        --txt: #f5f5f7;
+        --mut: #a0a0b0;
+        --line: #2a2a38;
+        --red: #e50914;
+        --gold: #f5c518;
+        --good: #2ecc71;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: var(--bg); }
+      body {
+        font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", sans-serif;
+        color: var(--txt);
+        padding-bottom: 40px;
+      }
+      a { color: inherit; text-decoration: none; }
+      .err { color: #fca5a5; padding: 24px; }
+
+      /* ---- top bar ---- */
+      .topbar {
+        position: sticky; top: 0; z-index: 30;
+        display: flex; align-items: center; gap: 16px;
+        padding: 14px 24px;
+        background: linear-gradient(180deg, rgba(11,11,16,.96), rgba(11,11,16,.7));
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: .02em; }
+      .brand .dot { color: var(--red); font-size: 22px; }
+      .grow { flex: 1; }
+      .search {
+        background: rgba(255,255,255,.08); border: 1px solid var(--line);
+        border-radius: 999px; padding: 8px 14px; color: var(--txt);
+        font-size: 14px; width: 230px; outline: none; transition: width .2s, border-color .2s;
+      }
+      .search:focus { width: 300px; border-color: #555; }
+      .search::placeholder { color: var(--mut); }
+      .count { font-size: 12px; color: var(--mut); white-space: nowrap; }
+
+      /* ---- hero ---- */
+      .hero {
+        position: relative; min-height: 360px; display: flex; align-items: flex-end;
+        padding: 40px; margin-bottom: 6px; overflow: hidden;
+      }
+      .hero .bg { position: absolute; inset: 0; background-size: cover; background-position: center 28%; filter: saturate(1.05); }
+      .hero .scrim { position: absolute; inset: 0; background:
+        linear-gradient(90deg, rgba(11,11,16,.92) 0%, rgba(11,11,16,.55) 45%, rgba(11,11,16,.15) 100%),
+        linear-gradient(0deg, var(--bg) 2%, rgba(11,11,16,0) 55%); }
+      .hero .inner { position: relative; max-width: 560px; }
+      .hero .tag { display: inline-block; font-size: 11px; letter-spacing: .18em; color: var(--red); font-weight: 800; margin-bottom: 10px; }
+      .hero h1 { font-size: clamp(26px, 4vw, 44px); margin: 0 0 12px; line-height: 1.08; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
+      .hero .meta { font-size: 13px; color: var(--mut); margin-bottom: 12px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+      .hero .desc { font-size: 14px; color: #d6d6e0; line-height: 1.6; margin-bottom: 18px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+      .hero .btn {
+        display: inline-flex; align-items: center; gap: 8px; background: #fff; color: #111;
+        font-weight: 700; font-size: 14px; padding: 10px 22px; border-radius: 6px; transition: opacity .15s;
+      }
+      .hero .btn:hover { opacity: .82; }
+
+      /* ---- rows ---- */
+      .row { margin: 26px 0 0; }
+      .row > h2 { font-size: 17px; margin: 0 0 12px; padding: 0 24px; font-weight: 700; }
+      .row .viewport { position: relative; }
+      .scroller { display: flex; gap: 12px; overflow-x: auto; padding: 6px 24px 14px; scroll-behavior: smooth; scrollbar-width: none; scroll-snap-type: x proximity; }
+      .scroller::-webkit-scrollbar { display: none; }
+      .arrow {
+        position: absolute; top: 0; bottom: 14px; width: 46px; border: 0; cursor: pointer; z-index: 6;
+        background: rgba(11,11,16,.7); color: #fff; font-size: 26px; opacity: 0; transition: opacity .15s;
+        display: grid; place-items: center;
+      }
+      .arrow.l { left: 0; } .arrow.r { right: 0; }
+      .viewport:hover .arrow { opacity: 1; }
+      .arrow:hover { background: rgba(11,11,16,.92); }
+
+      /* ---- card ---- */
+      .card {
+        position: relative; flex: 0 0 auto; width: 156px; scroll-snap-align: start; cursor: pointer;
+        transition: transform .22s ease; will-change: transform;
+      }
+      .card:hover { transform: scale(1.09) translateY(-4px); z-index: 5; }
+      .poster {
+        position: relative; width: 100%; aspect-ratio: 2 / 3; border-radius: 10px; overflow: hidden;
+        background: var(--bg2); box-shadow: 0 6px 18px rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.06);
+      }
+      .poster .ph { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 12px; }
+      .poster .ph .film { font-size: 30px; opacity: .55; margin-bottom: 8px; }
+      .poster .ph .t { font-size: 13px; font-weight: 700; line-height: 1.3; }
+      .poster .ph .y { font-size: 11px; color: rgba(255,255,255,.7); margin-top: 4px; }
+      .poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .poster .grad { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,0) 42%); opacity: 0; transition: opacity .2s; }
+      .card:hover .poster .grad { opacity: 1; }
+      .badges { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; gap: 6px; }
+      .pill { font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 999px; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); }
+      .pill.seen { background: rgba(46,204,113,.92); color: #062; }
+      .pill.star { background: rgba(0,0,0,.62); color: var(--gold); }
+      .info { position: absolute; left: 10px; right: 10px; bottom: 10px; opacity: 0; transform: translateY(6px); transition: .2s; }
+      .card:hover .info { opacity: 1; transform: none; }
+      .info .it { font-size: 13px; font-weight: 700; line-height: 1.25; }
+      .info .im { font-size: 11px; color: #cfcfda; margin-top: 3px; }
+      .plat { display: inline-block; margin-top: 6px; font-size: 10px; color: #cfcfda; border: 1px solid rgba(255,255,255,.3); border-radius: 4px; padding: 1px 6px; }
+
+      /* ---- search grid ---- */
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 18px 12px; padding: 18px 24px; }
+      .grid .card { width: 100%; }
+      .empty { color: var(--mut); padding: 40px 24px; text-align: center; }
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand"><span class="dot">●</span> マイシネマ</div>
+      <div class="grow"></div>
+      <input id="q" class="search" type="search" placeholder="タイトル・監督で検索…" autocomplete="off" />
+      <div class="count" id="count"></div>
+    </div>
+
+    <div id="hero"></div>
+    <div id="rows"></div>
+    <div id="results" class="hidden"></div>
+
+    <script>
+      const GENRE_ORDER = ["アクション","SF","ドラマ","コメディ","恋愛","サスペンス・スリラー","ホラー","アニメ","ドキュメンタリー","ファンタジー","その他"];
+      const GENRE_EMOJI = { "アクション":"💥","SF":"🚀","ドラマ":"🎭","コメディ":"😂","恋愛":"💞","サスペンス・スリラー":"🔪","ホラー":"👻","アニメ":"🎨","ドキュメンタリー":"🎥","ファンタジー":"🐉","その他":"🎬" };
+
+      const THEME_ORDER = ["CIA・中東・戦争","スパイ・アクション","マフィア・犯罪","アクション・冒険","SF","サスペンス・スリラー","ヒューマンドラマ","音楽","アート・芸術家","日本映画","恋愛・ミュージカル","コメディ","ドキュメンタリー"];
+      const THEME_EMOJI = { "CIA・中東・戦争":"🎖️","スパイ・アクション":"🕵️","マフィア・犯罪":"🔫","アクション・冒険":"💥","SF":"🚀","サスペンス・スリラー":"🔪","ヒューマンドラマ":"🎭","音楽":"🎸","アート・芸術家":"🎨","日本映画":"🗾","恋愛・ミュージカル":"💞","コメディ":"😂","ドキュメンタリー":"🎥" };
+
+      const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+      const ORIGIN = new URL(window.__MC_VIEW.dataUrl).origin;
+
+      function posterSrc(p) {
+        if (!p) return null;
+        if (/^(https?:|data:|blob:)/i.test(p)) return p;
+        return ORIGIN + "/" + String(p).replace(/^\/+/, "");
+      }
+      function detailUrl(id) { return ORIGIN + "/collections/movies?selected=" + encodeURIComponent(id); }
+
+      function gradFor(title) {
+        let h = 0; const s = String(title || "?");
+        for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+        const a = h % 360, b = (a + 48) % 360;
+        return "linear-gradient(150deg, hsl(" + a + " 55% 32%), hsl(" + b + " 60% 18%))";
+      }
+      const stars = (r) => { const n = Number(r); return n >= 1 && n <= 5 ? "★" + n : ""; };
+
+      function metaLine(it) {
+        return [it.year, it.genre, it.runtime ? it.runtime + "分" : null, it.director].filter(Boolean).map(esc).join(" · ");
+      }
+
+      function cardHtml(it) {
+        const src = posterSrc(it.poster);
+        const grad = gradFor(it.title);
+        const seen = it.watched === true || it.watched === "true";
+        const st = stars(it.rating);
+        const ph =
+          '<div class="ph" style="background:' + grad + '">' +
+            '<div class="film">🎬</div><div class="t">' + esc(it.title) + '</div>' +
+            (it.year ? '<div class="y">' + esc(it.year) + '</div>' : '') +
+          '</div>';
+        const img = src ? '<img loading="lazy" src="' + esc(src) + '" alt="" onerror="this.remove()" />' : '';
+        const badges =
+          '<div class="badges">' +
+            (seen ? '<span class="pill seen">✓ 鑑賞済</span>' : '<span class="pill">未鑑賞</span>') +
+            (st ? '<span class="pill star">' + st + '</span>' : '<span></span>') +
+          '</div>';
+        const info =
+          '<div class="info">' +
+            '<div class="it">' + esc(it.title) + '</div>' +
+            '<div class="im">' + metaLine(it) + '</div>' +
+            (it.platform ? '<span class="plat">' + esc(it.platform) + '</span>' : '') +
+          '</div>';
+        return (
+          '<a class="card" href="' + detailUrl(it.id) + '" target="_blank" rel="noopener" title="' + esc(it.title) + '">' +
+            '<div class="poster">' + ph + img + '<div class="grad"></div>' + badges + info + '</div>' +
+          '</a>'
+        );
+      }
+
+      function rowHtml(title, items) {
+        if (!items.length) return "";
+        const cards = items.map(cardHtml).join("");
+        return (
+          '<section class="row"><h2>' + esc(title) + '</h2>' +
+            '<div class="viewport">' +
+              '<button class="arrow l" data-dir="-1" aria-label="前へ">‹</button>' +
+              '<div class="scroller">' + cards + '</div>' +
+              '<button class="arrow r" data-dir="1" aria-label="次へ">›</button>' +
+            '</div>' +
+          '</section>'
+        );
+      }
+
+      function heroHtml(it) {
+        if (!it) return "";
+        const src = posterSrc(it.poster);
+        const bg = src ? 'background-image:url(' + esc(src) + ')' : 'background:' + gradFor(it.title);
+        const desc = it.notes ? '<p class="desc">' + esc(it.notes) + '</p>' : '';
+        const st = stars(it.rating);
+        const meta = [
+          it.year, it.genre, it.runtime ? it.runtime + "分" : null, it.country,
+          st ? '<span style="color:var(--gold)">' + st + '</span>' : null,
+          (it.watched === true || it.watched === "true") ? '<span style="color:var(--good)">✓ 鑑賞済</span>' : null,
+        ].filter(Boolean);
+        return (
+          '<div class="hero">' +
+            '<div class="bg" style="' + bg + '"></div><div class="scrim"></div>' +
+            '<div class="inner">' +
+              '<span class="tag">注目の一本</span>' +
+              '<h1>' + esc(it.title) + '</h1>' +
+              (it.director ? '<div class="meta"><span>監督: ' + esc(it.director) + '</span></div>' : '') +
+              '<div class="meta">' + meta.join('<span>·</span>') + '</div>' +
+              desc +
+              '<a class="btn" href="' + detailUrl(it.id) + '" target="_blank" rel="noopener">▶ 詳細を見る</a>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      function pickHero(items) {
+        return [...items].sort((a, b) =>
+          (Number(b.rating) || 0) - (Number(a.rating) || 0) || (Number(b.year) || 0) - (Number(a.year) || 0)
+        )[0];
+      }
+
+      function buildRows(items) {
+        const parts = [];
+        const unseen = items.filter((it) => !(it.watched === true || it.watched === "true"));
+        parts.push(rowHtml("これから観る", unseen));
+        const top = items.filter((it) => Number(it.rating) >= 4).sort((a, b) => Number(b.rating) - Number(a.rating));
+        parts.push(rowHtml("高評価 ★4以上", top));
+        const recent = items.filter((it) => it.watchDate).sort((a, b) => String(b.watchDate).localeCompare(String(a.watchDate))).slice(0, 14);
+        parts.push(rowHtml("最近観た", recent));
+        for (const t of THEME_ORDER) {
+          const inT = items.filter((it) => it.theme === t).sort((a, b) => (Number(b.year) || 0) - (Number(a.year) || 0));
+          parts.push(rowHtml((THEME_EMOJI[t] || "") + " " + t, inT));
+        }
+        const noTheme = items.filter((it) => !it.theme);
+        parts.push(rowHtml("🎬 その他", noTheme));
+        return parts.join("");
+      }
+
+      function wireArrows() {
+        document.querySelectorAll(".viewport").forEach((vp) => {
+          const sc = vp.querySelector(".scroller");
+          vp.querySelectorAll(".arrow").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              sc.scrollBy({ left: Number(btn.dataset.dir) * Math.round(sc.clientWidth * 0.8), behavior: "smooth" });
+            });
+          });
+        });
+      }
+
+      function setupSearch(items) {
+        const q = document.getElementById("q");
+        const rows = document.getElementById("rows");
+        const hero = document.getElementById("hero");
+        const results = document.getElementById("results");
+        q.addEventListener("input", () => {
+          const term = q.value.trim().toLowerCase();
+          if (!term) {
+            results.classList.add("hidden"); rows.classList.remove("hidden"); hero.classList.remove("hidden");
+            return;
+          }
+          hero.classList.add("hidden"); rows.classList.add("hidden"); results.classList.remove("hidden");
+          const hit = items.filter((it) =>
+            [it.title, it.originalTitle, it.director, it.genre, it.year].filter(Boolean)
+              .some((v) => String(v).toLowerCase().includes(term))
+          );
+          results.innerHTML = hit.length
+            ? '<div class="grid">' + hit.map(cardHtml).join("") + '</div>'
+            : '<div class="empty">「' + esc(q.value) + '」に一致する作品はありません</div>';
+        });
+      }
+
+      async function main() {
+        const { token, dataUrl } = window.__MC_VIEW;
+        const res = await fetch(dataUrl, { headers: { Authorization: "Bearer " + token } });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const { items } = await res.json();
+
+        document.getElementById("count").textContent = "全 " + items.length + " 作品";
+        if (!items.length) {
+          document.getElementById("rows").innerHTML = '<div class="empty">まだ作品がありません。チャットで映画を追加してください。</div>';
+          return;
+        }
+        document.getElementById("hero").innerHTML = heroHtml(pickHero(items));
+        document.getElementById("rows").innerHTML = buildRows(items);
+        wireArrows();
+        setupSearch(items);
+      }
+
+      main().catch((e) => {
+        document.body.insertAdjacentHTML("beforeend", '<div class="err">読み込み失敗: ' + esc(e.message) + '</div>');
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "mulmoclaude-collections",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Curated registry of MulmoClaude collections (schema-driven data apps).",
+  "license": "MIT",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "build-index": "node scripts/build-index.mjs",
+    "check-index": "node scripts/build-index.mjs --check",
+    "test": "node --test"
+  }
+}
