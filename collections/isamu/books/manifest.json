@@ -1,0 +1,10 @@
+{
+  "files": [
+    "SKILL.md",
+    "meta.json",
+    "schema.json",
+    "seed/items/1984-orwell.json",
+    "seed/items/pragmatic-programmer.json",
+    "seed/items/wagahai-neko.json"
+  ]
+}

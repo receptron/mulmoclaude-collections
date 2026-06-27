@@ -1,8 +1,27 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-26T21:43:37.843Z",
+  "generatedAt": "2026-06-27T07:13:18.082Z",
   "registry": "receptron/mulmoclaude-collections",
   "collections": [
+    {
+      "id": "isamu/books",
+      "author": "isamu",
+      "slug": "books",
+      "title": "読書リスト",
+      "icon": "menu_book",
+      "description": "読みたい・読んだ本を記録するコレクション。",
+      "version": "1.0.0",
+      "tags": [
+        "reading"
+      ],
+      "license": "MIT",
+      "fieldCount": 10,
+      "views": [],
+      "hasSeed": true,
+      "seedCount": 3,
+      "path": "collections/isamu/books",
+      "contentSha": "a41548eb97c94e61"
+    },
     {
       "id": "isamu/movies",
       "author": "isamu",

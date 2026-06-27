@@ -1,0 +1,12 @@
+{
+  "author": "isamu",
+  "slug": "books",
+  "version": "1.0.0",
+  "title": "読書リスト",
+  "description": "読みたい・読んだ本を記録するコレクション。",
+  "tags": [
+    "reading"
+  ],
+  "license": "MIT",
+  "dataConsent": true
+}
