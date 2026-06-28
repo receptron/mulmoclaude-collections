@@ -1,0 +1,20 @@
+{
+  "id": "fujifilm-xf-35mm-f14",
+  "name": "Fujifilm XF 35mm F1.4 R",
+  "maker": "Fujifilm",
+  "mount": "Fujifilm X",
+  "focalLengthMin": 35,
+  "fStopWide": 1.4,
+  "format": "APS-C",
+  "focus": "AF",
+  "ownership": "所有中",
+  "hasStabilizer": false,
+  "isInternalFocus": false,
+  "minFocusDistance": 0.28,
+  "maxMagnification": 0.17,
+  "bladesCount": 7,
+  "filterDiameter": 52,
+  "weight": 187,
+  "releaseDate": "2012",
+  "notes": "APS-C の名玉。35mm換算 約53mm。サンプルレコード。"
+}

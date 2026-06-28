@@ -1,0 +1,22 @@
+{
+  "id": "canon-rf-24-105mm-f4l",
+  "name": "Canon RF 24-105mm F4 L IS USM",
+  "maker": "Canon",
+  "mount": "Canon RF",
+  "focalLengthMin": 24,
+  "focalLengthMax": 105,
+  "fStopWide": 4,
+  "format": "フルサイズ",
+  "focus": "AF",
+  "ownership": "所有中",
+  "hasStabilizer": true,
+  "hasDustMoistureResistance": true,
+  "isInternalFocus": false,
+  "minFocusDistance": 0.45,
+  "maxMagnification": 0.24,
+  "bladesCount": 9,
+  "filterDiameter": 77,
+  "weight": 700,
+  "releaseDate": "2018",
+  "notes": "標準ズームの定番。サンプルレコード。"
+}

@@ -1,0 +1,222 @@
+{
+  "title": "カメラのレンズ",
+  "icon": "camera",
+  "dataPath": "data/lens/items",
+  "primaryKey": "id",
+  "fields": {
+    "id": {
+      "type": "string",
+      "label": "ID",
+      "primary": true,
+      "required": true
+    },
+    "name": {
+      "type": "string",
+      "label": "レンズ名",
+      "required": true
+    },
+    "maker": {
+      "type": "enum",
+      "label": "メーカー",
+      "required": true,
+      "values": [
+        "Canon",
+        "Nikon",
+        "Sony",
+        "Fujifilm",
+        "Panasonic",
+        "OM System / Olympus",
+        "Pentax",
+        "Leica",
+        "Zeiss",
+        "Sigma",
+        "Tamron",
+        "Tokina",
+        "Voigtländer",
+        "Samyang",
+        "Viltrox",
+        "Laowa",
+        "TTArtisan",
+        "7Artisans",
+        "SG-image",
+        "Thypoch",
+        "その他"
+      ]
+    },
+    "mount": {
+      "type": "enum",
+      "label": "マウント",
+      "required": true,
+      "values": [
+        "Canon EF",
+        "Canon EF-S",
+        "Canon RF",
+        "Canon EF-M",
+        "Nikon F",
+        "Nikon Z",
+        "Sony E",
+        "Sony A",
+        "Fujifilm X",
+        "Fujifilm GFX",
+        "Micro Four Thirds",
+        "L-Mount",
+        "Pentax K",
+        "Leica M",
+        "その他"
+      ]
+    },
+    "focalLengthMin": {
+      "type": "number",
+      "label": "焦点距離 最小 (mm)",
+      "required": true
+    },
+    "focalLengthMax": {
+      "type": "number",
+      "label": "焦点距離 最大 (mm) ※単焦点は空欄"
+    },
+    "fStopWide": {
+      "type": "number",
+      "label": "開放F値（広角/固定）"
+    },
+    "fStopTele": {
+      "type": "number",
+      "label": "開放F値（望遠端・可変時）"
+    },
+    "format": {
+      "type": "enum",
+      "label": "対応フォーマット",
+      "values": [
+        "フルサイズ",
+        "APS-C",
+        "マイクロフォーサーズ",
+        "中判",
+        "1インチ",
+        "その他"
+      ]
+    },
+    "focus": {
+      "type": "enum",
+      "label": "フォーカス方式",
+      "values": [
+        "AF",
+        "MF"
+      ]
+    },
+    "ownership": {
+      "type": "enum",
+      "label": "所有状況",
+      "values": [
+        "欲しい",
+        "所有中",
+        "売却済み"
+      ]
+    },
+    "purchaseDate": {
+      "type": "date",
+      "label": "購入日（買った時期）"
+    },
+    "hasStabilizer": {
+      "type": "boolean",
+      "label": "手ぶれ補正"
+    },
+    "hasDustMoistureResistance": {
+      "type": "boolean",
+      "label": "防塵防滴"
+    },
+    "isInternalFocus": {
+      "type": "boolean",
+      "label": "インナーフォーカス"
+    },
+    "minFocusDistance": {
+      "type": "number",
+      "label": "最短撮影距離 (m)"
+    },
+    "maxMagnification": {
+      "type": "number",
+      "label": "最大撮影倍率"
+    },
+    "bladesCount": {
+      "type": "number",
+      "label": "絞り羽根枚数"
+    },
+    "elements": {
+      "type": "number",
+      "label": "レンズ構成枚数"
+    },
+    "groups": {
+      "type": "number",
+      "label": "レンズ構成群数"
+    },
+    "filterDiameter": {
+      "type": "number",
+      "label": "フィルター径 (mm)"
+    },
+    "diameter": {
+      "type": "number",
+      "label": "最大径 (mm)"
+    },
+    "length": {
+      "type": "number",
+      "label": "全長 (mm)"
+    },
+    "weight": {
+      "type": "number",
+      "label": "重量 (g)"
+    },
+    "releaseDate": {
+      "type": "string",
+      "label": "発売日 (YYYY または YYYY-MM-DD)"
+    },
+    "discontinued": {
+      "type": "boolean",
+      "label": "生産終了"
+    },
+    "discontinuedDate": {
+      "type": "string",
+      "label": "生産終了日",
+      "when": {
+        "field": "discontinued",
+        "in": [
+          "true"
+        ]
+      }
+    },
+    "hoodModel": {
+      "type": "string",
+      "label": "フード型番"
+    },
+    "caseModel": {
+      "type": "string",
+      "label": "ケース型番"
+    },
+    "EANCode": {
+      "type": "string",
+      "label": "EAN/JANコード"
+    },
+    "photo": {
+      "type": "image",
+      "label": "写真"
+    },
+    "links": {
+      "type": "markdown",
+      "label": "関連リンク（公式 / 価格.com / Amazon 等）"
+    },
+    "notes": {
+      "type": "text",
+      "label": "メモ"
+    }
+  },
+  "displayField": "name",
+  "kanbanField": "ownership",
+  "views": [
+    {
+      "id": "zukan",
+      "label": "図鑑",
+      "icon": "view_timeline",
+      "file": "views/zukan.html",
+      "capabilities": [
+        "read"
+      ]
+    }
+  ]
+}
