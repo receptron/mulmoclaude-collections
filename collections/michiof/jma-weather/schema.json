@@ -1,0 +1,339 @@
+{
+  "title": "気象庁 天気予報",
+  "icon": "partly_cloudy_day",
+  "dataPath": "data/jma-weather/items",
+  "primaryKey": "id",
+  "fields": {
+    "id": {
+      "type": "string",
+      "label": "ID",
+      "primary": true,
+      "required": true
+    },
+    "office": {
+      "type": "string",
+      "label": "office code"
+    },
+    "cityName": {
+      "type": "string",
+      "label": "都市"
+    },
+    "regionName": {
+      "type": "string",
+      "label": "地域"
+    },
+    "cityOrder": {
+      "type": "number",
+      "label": "都市並び順"
+    },
+    "date": {
+      "type": "date",
+      "label": "日付"
+    },
+    "weekday": {
+      "type": "string",
+      "label": "曜日"
+    },
+    "dayLabel": {
+      "type": "string",
+      "label": "区分"
+    },
+    "source": {
+      "type": "enum",
+      "label": "情報源",
+      "values": [
+        "today",
+        "tomorrow",
+        "weekly",
+        "past",
+        "typhoon",
+        "chart",
+        "marine",
+        "warning"
+      ]
+    },
+    "headlineText": {
+      "type": "markdown",
+      "label": "警報見出し文"
+    },
+    "warnings": {
+      "type": "table",
+      "label": "警報・注意報",
+      "of": {
+        "code": {
+          "type": "string",
+          "label": "コード"
+        },
+        "name": {
+          "type": "string",
+          "label": "名称"
+        },
+        "level": {
+          "type": "enum",
+          "label": "レベル",
+          "values": ["special", "warning", "advisory"]
+        },
+        "status": {
+          "type": "string",
+          "label": "状態"
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "label": "サマリ"
+    },
+    "weather": {
+      "type": "string",
+      "label": "天気"
+    },
+    "weatherCode": {
+      "type": "string",
+      "label": "JMA 天気コード"
+    },
+    "weatherIcon": {
+      "type": "string",
+      "label": "天気アイコン"
+    },
+    "min": {
+      "type": "string",
+      "label": "最低気温 (℃)"
+    },
+    "max": {
+      "type": "string",
+      "label": "最高気温 (℃)"
+    },
+    "currentTemp": {
+      "type": "string",
+      "label": "現在気温 (℃)"
+    },
+    "pop": {
+      "type": "string",
+      "label": "降水確率 (%)"
+    },
+    "popsByBand": {
+      "type": "string",
+      "label": "時間帯別降水確率"
+    },
+    "precip1h": {
+      "type": "string",
+      "label": "直近1h降水量 (mm)"
+    },
+    "precip6h": {
+      "type": "string",
+      "label": "直近6h降水量 (mm)"
+    },
+    "precip24h": {
+      "type": "string",
+      "label": "直近24h降水量 (mm)"
+    },
+    "precipAsOf": {
+      "type": "string",
+      "label": "降水量観測時刻 (ISO)"
+    },
+    "wind": {
+      "type": "string",
+      "label": "風"
+    },
+    "wave": {
+      "type": "string",
+      "label": "波"
+    },
+    "reliability": {
+      "type": "string",
+      "label": "信頼度"
+    },
+    "overviewText": {
+      "type": "markdown",
+      "label": "概要文"
+    },
+    "areaCode": {
+      "type": "string",
+      "label": "海域コード (4桁)"
+    },
+    "areaName": {
+      "type": "string",
+      "label": "海域名"
+    },
+    "publishingOffice": {
+      "type": "string",
+      "label": "発表気象台"
+    },
+    "reportDatetime": {
+      "type": "string",
+      "label": "発表日時"
+    },
+    "updatedAt": {
+      "type": "string",
+      "label": "取得時刻 (ISO)"
+    },
+    "eventId": {
+      "type": "string",
+      "label": "EventID"
+    },
+    "typhoonNumber": {
+      "type": "string",
+      "label": "台風番号"
+    },
+    "typhoonName": {
+      "type": "string",
+      "label": "国際名"
+    },
+    "typhoonNameJa": {
+      "type": "string",
+      "label": "国際名カナ"
+    },
+    "typhoonLabel": {
+      "type": "string",
+      "label": "和文ラベル"
+    },
+    "forecastSerial": {
+      "type": "number",
+      "label": "予報通報番号"
+    },
+    "forecastPoints": {
+      "type": "table",
+      "label": "予報点",
+      "of": {
+        "dtType": {
+          "type": "string",
+          "label": "区分"
+        },
+        "dt": {
+          "type": "string",
+          "label": "対象時刻 (ISO)"
+        },
+        "lat": {
+          "type": "number",
+          "label": "緯度"
+        },
+        "lng": {
+          "type": "number",
+          "label": "経度"
+        },
+        "pressure_hpa": {
+          "type": "number",
+          "label": "中心気圧 (hPa)"
+        },
+        "cls": {
+          "type": "string",
+          "label": "階級"
+        },
+        "moveDir": {
+          "type": "string",
+          "label": "進行方向"
+        },
+        "moveKmh": {
+          "type": "number",
+          "label": "進行速度 (km/h)"
+        },
+        "wind_max_ms": {
+          "type": "number",
+          "label": "最大風速 (m/s)"
+        },
+        "wind_gust_ms": {
+          "type": "number",
+          "label": "最大瞬間風速 (m/s)"
+        },
+        "forecast_radius_km": {
+          "type": "number",
+          "label": "予報円半径 (km)"
+        },
+        "strong_radius_km": {
+          "type": "number",
+          "label": "強風域半径 (km)"
+        },
+        "storm_radius_km": {
+          "type": "number",
+          "label": "暴風域半径 (km)"
+        },
+        "storm_warning_radius_km": {
+          "type": "number",
+          "label": "暴風警戒域半径 (km)"
+        }
+      }
+    },
+    "archived": {
+      "type": "boolean",
+      "label": "アーカイブ"
+    },
+    "dissipated": {
+      "type": "boolean",
+      "label": "終息"
+    },
+    "dissipationKind": {
+      "type": "string",
+      "label": "終息種別"
+    },
+    "dissipationCls": {
+      "type": "string",
+      "label": "終息時の階級"
+    },
+    "dissipationAnnouncedAt": {
+      "type": "string",
+      "label": "終息報発表時刻 (ISO)"
+    },
+    "forecastIssuedAt": {
+      "type": "string",
+      "label": "予報発表時刻 (ISO)"
+    },
+    "forecastIssuedSerial": {
+      "type": "number",
+      "label": "予報通報番号 (予報源)"
+    },
+    "chartType": {
+      "type": "enum",
+      "label": "天気図の種類",
+      "values": [
+        "surface",
+        "fcst24",
+        "fcst48"
+      ]
+    },
+    "chartLabel": {
+      "type": "string",
+      "label": "天気図名"
+    },
+    "targetDateTime": {
+      "type": "string",
+      "label": "対象時刻 (ISO)"
+    },
+    "validDateTime": {
+      "type": "string",
+      "label": "有効時刻 (ISO)"
+    },
+    "pngFilename": {
+      "type": "string",
+      "label": "PNG ファイル名"
+    },
+    "pngUrl": {
+      "type": "string",
+      "label": "PNG URL (JMA)"
+    },
+    "pngPath": {
+      "type": "string",
+      "label": "PNG ローカルパス"
+    },
+    "officeLabel": {
+      "type": "string",
+      "label": "発表 海上気象台"
+    },
+    "title": {
+      "type": "string",
+      "label": "電文タイトル"
+    }
+  },
+  "displayField": "summary",
+  "calendarField": "date",
+  "views": [
+    {
+      "id": "news",
+      "label": "天気予報",
+      "icon": "wb_sunny",
+      "file": "views/news-weather.html",
+      "capabilities": [
+        "read"
+      ]
+    }
+  ]
+}

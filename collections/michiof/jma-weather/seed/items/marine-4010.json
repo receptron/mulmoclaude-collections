@@ -1,0 +1,15 @@
+{
+  "id": "marine-4010",
+  "source": "marine",
+  "areaCode": "4010",
+  "areaName": "瀬戸内海",
+  "office": "280000",
+  "officeLabel": "神戸海洋気象台",
+  "title": "神戸海上気象",
+  "publishingOffice": "神戸海洋気象台",
+  "reportDatetime": "2026-07-01T16:00:00+09:00",
+  "summary": "瀬戸内海 今日: 東 15ノット（8m/s）・波 1.0メートル・くもり",
+  "wind": "東の風 15ノット（8メートル）",
+  "wave": "1.0メートル",
+  "updatedAt": "2026-07-01T16:05:00+09:00"
+}

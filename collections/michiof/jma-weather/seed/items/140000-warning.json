@@ -1,0 +1,26 @@
+{
+  "id": "140000-warning",
+  "source": "warning",
+  "office": "140000",
+  "cityName": "横浜",
+  "regionName": "神奈川県",
+  "cityOrder": 5,
+  "publishingOffice": "横浜地方気象台",
+  "reportDatetime": "2026-07-02T11:30:00+09:00",
+  "headlineText": "（合成サンプル）横浜市では、2 日夕方まで強風と高波に注意してください。",
+  "warnings": [
+    {
+      "code": "15",
+      "name": "強風注意報",
+      "level": "advisory",
+      "status": "発表"
+    },
+    {
+      "code": "16",
+      "name": "波浪注意報",
+      "level": "advisory",
+      "status": "継続"
+    }
+  ],
+  "updatedAt": "2026-07-02T11:35:00+09:00"
+}

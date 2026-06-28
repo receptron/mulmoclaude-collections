@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-27T23:25:01.690Z",
+  "generatedAt": "2026-06-28T00:27:35.024Z",
   "registry": "receptron/mulmoclaude-collections",
   "collections": [
     {
@@ -49,6 +49,31 @@
       "seedCount": 3,
       "path": "collections/isamu/movies",
       "contentSha": "305247fb2e1432da"
+    },
+    {
+      "id": "michiof/jma-weather",
+      "author": "michiof",
+      "slug": "jma-weather",
+      "title": "気象庁 天気予報",
+      "icon": "partly_cloudy_day",
+      "description": "気象庁の公開 API から天気予報・警報注意報・台風・地上天気図・地方海上予報を取り込んで1つに統合する schema-driven collection。テレビニュース風のカスタムビュー「天気予報」で 5 モード（指定地域 / 全国地図 / 台風 / 天気図 / 海上）を切替できる。",
+      "version": "1.0.0",
+      "tags": [
+        "weather",
+        "jma",
+        "japan",
+        "marine",
+        "typhoon"
+      ],
+      "license": "MIT",
+      "fieldCount": 56,
+      "views": [
+        "天気予報"
+      ],
+      "hasSeed": true,
+      "seedCount": 5,
+      "path": "collections/michiof/jma-weather",
+      "contentSha": "9d1c11087ba46321"
     }
   ]
 }
