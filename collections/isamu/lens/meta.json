@@ -1,0 +1,10 @@
+{
+  "author": "isamu",
+  "slug": "lens",
+  "version": "1.0.0",
+  "title": "カメラのレンズ",
+  "description": "所有・気になっているカメラレンズを記録するコレクション。焦点距離・F値・マウント・対応フォーマットなどのスペックを管理し、焦点距離バー・35mm換算トグル・マウント/フォーマット絞り込みを備えた『図鑑』カスタムビューで手持ちのレンズ資産を一覧できる。",
+  "tags": ["photography", "camera", "gear", "personal"],
+  "license": "MIT",
+  "dataConsent": true
+}

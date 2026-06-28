@@ -1,0 +1,22 @@
+{
+  "id": "sony-fe-70-200mm-f28-gm",
+  "name": "Sony FE 70-200mm F2.8 GM OSS",
+  "maker": "Sony",
+  "mount": "Sony E",
+  "focalLengthMin": 70,
+  "focalLengthMax": 200,
+  "fStopWide": 2.8,
+  "format": "フルサイズ",
+  "focus": "AF",
+  "ownership": "所有中",
+  "hasStabilizer": true,
+  "hasDustMoistureResistance": true,
+  "isInternalFocus": true,
+  "minFocusDistance": 0.96,
+  "maxMagnification": 0.25,
+  "bladesCount": 11,
+  "filterDiameter": 77,
+  "weight": 1480,
+  "releaseDate": "2016",
+  "notes": "大三元の望遠ズーム。サンプルレコード。"
+}

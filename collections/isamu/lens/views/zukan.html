@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --bg: #0e1116;
+        --card: #171b22;
+        --card2: #1f242d;
+        --line: #2b313c;
+        --txt: #e8ecf3;
+        --mut: #97a1b2;
+        --rf: #ef4444;
+        --ef: #f59e0b;
+        --fx: #22c55e;
+        --m: #38bdf8;
+        --etc: #a78bfa;
+        --label-w: 232px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", sans-serif;
+        margin: 0; padding: 18px; background: var(--bg); color: var(--txt);
+      }
+      a { color: inherit; text-decoration: none; }
+
+      .head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+      .head .logo {
+        width: 42px; height: 42px; border-radius: 11px;
+        background: linear-gradient(135deg, #ef4444, #f59e0b);
+        display: grid; place-items: center; font-size: 22px;
+      }
+      .head h1 { font-size: 18px; margin: 0; }
+      .head p { margin: 2px 0 0; font-size: 12px; color: var(--mut); }
+
+      .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+      .stat { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 8px 13px; }
+      .stat .n { font-size: 19px; font-weight: 700; line-height: 1; }
+      .stat .l { font-size: 10px; color: var(--mut); margin-top: 5px; }
+
+      .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+      .seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+      .seg button { background: transparent; color: var(--mut); border: 0; padding: 7px 13px; font-size: 13px; cursor: pointer; font-family: inherit; }
+      .seg button.on { background: var(--card2); color: var(--txt); font-weight: 600; }
+      select {
+        background: var(--card); color: var(--txt); border: 1px solid var(--line);
+        border-radius: 9px; padding: 7px 10px; font-size: 13px; font-family: inherit; cursor: pointer;
+        max-width: 200px;
+      }
+      .reset {
+        background: transparent; color: var(--mut); border: 1px solid var(--line);
+        border-radius: 9px; padding: 7px 11px; font-size: 12px; font-family: inherit; cursor: pointer;
+      }
+      .reset:hover { color: var(--txt); border-color: #4b5566; }
+      .spacer { flex: 1; }
+      .legend { display: flex; flex-wrap: wrap; gap: 11px; font-size: 11px; color: var(--mut); }
+      .legend span { display: inline-flex; align-items: center; gap: 5px; }
+      .dot { width: 10px; height: 10px; border-radius: 3px; }
+
+      /* ---- bar map ---- */
+      .axis { position: relative; height: 22px; margin-left: var(--label-w); border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+      .tick { position: absolute; top: 0; transform: translateX(-50%); font-size: 10px; color: var(--mut); font-variant-numeric: tabular-nums; }
+      .tick::after { content: ""; position: absolute; left: 50%; top: 15px; width: 1px; height: 7px; background: var(--line); }
+      .gridline { position: absolute; top: 22px; bottom: 0; width: 1px; background: rgba(255,255,255,.035); }
+      .rows { position: relative; }
+      .row { display: grid; grid-template-columns: var(--label-w) 1fr; align-items: center; gap: 0; padding: 3px 0; border-radius: 7px; cursor: pointer; }
+      .row:hover { background: rgba(255,255,255,.05); }
+      .row.sold { opacity: .5; }
+      .rlabel { padding-right: 12px; min-width: 0; }
+      .rlabel .nm { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .rlabel .mt { font-size: 10.5px; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+      .track { position: relative; height: 26px; }
+      .barwrap { position: absolute; top: 50%; transform: translateY(-50%); height: 9px; }
+      .barwrap .b { position: absolute; inset: 0; border-radius: 99px; }
+      .barwrap.sold .b { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.25) 0 4px, transparent 4px 8px); }
+      .pt { position: absolute; top: 50%; width: 13px; height: 13px; border-radius: 50%; transform: translate(-50%, -50%); border: 2.5px solid var(--bg); }
+      .blabel { position: absolute; top: 50%; transform: translateY(-50%); font-size: 10.5px; color: var(--mut); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+      /* ---- gallery ---- */
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 13px; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 13px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: border-color .15s, transform .1s; }
+      .card:hover { border-color: #4b5566; transform: translateY(-2px); }
+      .card.sold { opacity: .62; }
+      .shot { position: relative; aspect-ratio: 4 / 3; overflow: hidden; }
+      .shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .shot .ph { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; }
+      .shot .ph .fl { font-size: 27px; font-weight: 800; letter-spacing: -.02em; }
+      .shot .ph .fn { font-size: 12px; opacity: .8; }
+      .shot .ring { position: absolute; left: 9px; top: 9px; width: 13px; height: 13px; border-radius: 50%; border: 3px solid #ef4444; }
+      .shot .tag { position: absolute; right: 8px; top: 8px; font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: rgba(0,0,0,.55); }
+      .shot .tag.sold { background: rgba(0,0,0,.65); color: #fca5a5; }
+      .cbody { padding: 9px 11px 11px; }
+      .cbody .nm { font-size: 12.5px; font-weight: 600; line-height: 1.3; }
+      .cbody .meta { font-size: 11px; color: var(--mut); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 6px; }
+      .cbody .meta .f { color: #fcd34d; font-weight: 600; }
+
+      /* ---- compact list (thumbnails) ---- */
+      .list { display: flex; flex-direction: column; gap: 6px; }
+      .li { display: flex; align-items: center; gap: 12px; padding: 7px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+      .li:hover { border-color: #4b5566; }
+      .li.sold { opacity: .58; }
+      .li .th { width: 56px; height: 42px; border-radius: 6px; overflow: hidden; flex: none; background: var(--card2); position: relative; display: grid; place-items: center; }
+      .li .th .fl { font-size: 10px; font-weight: 700; color: var(--mut); }
+      .li .th img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .li .th .ring { position: absolute; left: 4px; top: 4px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid #ef4444; }
+      .li .info { min-width: 0; flex: 1; }
+      .li .info .nm { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .li .info .mt { font-size: 11px; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+      .li .rt { font-size: 11px; color: var(--mut); white-space: nowrap; display: flex; align-items: center; gap: 9px; font-variant-numeric: tabular-nums; }
+      .li .rt .f { color: #fcd34d; font-weight: 600; }
+      .li .rt .soldtag { color: #fca5a5; }
+      .li .rt .wishtag { color: #5eead4; }
+      @media (max-width: 560px) { .li .rt .pd { display: none; } }
+
+      /* mount color chip (shown in bar + list rows) */
+      .mchip { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; border: 1px solid; white-space: nowrap; vertical-align: middle; }
+
+      /* wishlist (欲しい) treatment — not owned, not sold */
+      .row.wish, .li.wish { background: rgba(94,234,212,.07); }
+      .row.wish:hover, .li.wish:hover { background: rgba(94,234,212,.12); }
+      .barwrap.wish .b, .pt.wish { opacity: .5; }
+      .barwrap.wish { outline: 1px dashed rgba(94,234,212,.6); outline-offset: 1px; border-radius: 99px; }
+      .card.wish { outline: 2px solid rgba(94,234,212,.5); outline-offset: -2px; }
+      .shot .tag.wish { background: rgba(13,148,136,.7); color: #ccfbf1; }
+
+      .err { color: #fca5a5; font-size: 13px; }
+      @media (max-width: 600px) { :root { --label-w: 138px; } body { padding: 12px; } }
+    </style>
+  </head>
+  <body>
+    <div class="head">
+      <div class="logo">📷</div>
+      <div>
+        <h1>レンズ図鑑</h1>
+        <p id="sub">読み込み中…</p>
+      </div>
+    </div>
+
+    <div id="stats" class="stats"></div>
+
+    <div class="controls">
+      <div class="seg" id="mode">
+        <button data-v="bars" class="on">焦点距離バー</button>
+        <button data-v="list">リスト</button>
+        <button data-v="gallery">ギャラリー</button>
+      </div>
+      <select id="sort">
+        <option value="focal">焦点距離順</option>
+        <option value="date">購入日順</option>
+        <option value="maker">メーカー順</option>
+        <option value="fstop">開放F値順</option>
+        <option value="name">名前順</option>
+      </select>
+      <div class="seg" id="dir">
+        <button data-v="asc" class="on">昇順</button>
+        <button data-v="desc">降順</button>
+      </div>
+      <select id="own">
+        <option value="all">状況：すべて</option>
+        <option value="所有中">所有中</option>
+        <option value="欲しい">欲しい</option>
+        <option value="売却済み">売却済み</option>
+      </select>
+      <select id="fmaker"><option value="all">メーカー：すべて</option></select>
+      <select id="fmount"><option value="all">マウント：すべて</option></select>
+      <select id="fseries"><option value="all">シリーズ：すべて</option></select>
+      <button id="reset" class="reset" type="button">クリア</button>
+      <div class="seg" id="equiv" title="APS-C等を35mm判換算で表示・ソート">
+        <button data-v="off" class="on">実焦点</button>
+        <button data-v="on">35mm換算</button>
+      </div>
+      <div class="spacer"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--rf)"></i>Canon RF</span>
+        <span><i class="dot" style="background:var(--ef)"></i>Canon EF/EF-S</span>
+        <span><i class="dot" style="background:var(--fx)"></i>Fujifilm X</span>
+        <span><i class="dot" style="background:var(--m)"></i>Leica M</span>
+        <span><i class="dot" style="background:var(--etc)"></i>その他</span>
+      </div>
+    </div>
+
+    <div id="root"></div>
+
+    <script>
+      const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+      const ORIGIN = new URL(window.__MC_VIEW.dataUrl).origin;
+      const imgSrc = (p) => !p ? null : (/^(https?:|data:|blob:)/i.test(p) ? p : ORIGIN + "/" + String(p).replace(/^\/+/, ""));
+      const openItem = (id) => { try { window.__MC_VIEW.openItem(id, "view"); } catch (e) {} };
+
+      const state = { mode: "bars", sort: "focal", dir: "asc", own: "all", equiv: false, maker: "all", mount: "all", series: "all" };
+      let ALL = [];
+
+      function mountStyle(mount) {
+        if (mount === "Canon RF") return { c: "var(--rf)", k: "Canon RF" };
+        if (mount === "Canon EF" || mount === "Canon EF-S") return { c: "var(--ef)", k: "Canon EF/EF-S" };
+        if (mount === "Fujifilm X") return { c: "var(--fx)", k: "Fujifilm X" };
+        if (mount === "Leica M") return { c: "var(--m)", k: "Leica M" };
+        return { c: "var(--etc)", k: "その他" };
+      }
+      const shortMount = (m) => String(m || "").replace(/^Canon /, "").replace(/^Fujifilm /, "");
+      // Lens "series" — first-party Canon/Fuji lines get a clean label from the
+      // name prefix; third-party fall back to "<maker> · <mount>".
+      function series(it) {
+        const n = String(it.name || "");
+        if (/^RF/i.test(n)) return "Canon RF";
+        if (/^EF-S/i.test(n)) return "Canon EF-S";
+        if (/^EF/i.test(n)) return "Canon EF";
+        if (/^XF/i.test(n)) return "Fujifilm XF";
+        return it.maker + (it.mount ? " · " + shortMount(it.mount) : "");
+      }
+      const fmin = (it) => Number(it.focalLengthMin);
+      const fmax = (it) => Number(it.focalLengthMax != null && it.focalLengthMax !== "" ? it.focalLengthMax : it.focalLengthMin);
+      const isZoom = (it) => fmax(it) > fmin(it);
+      const isSold = (it) => it.ownership === "売却済み";
+      const isWish = (it) => it.ownership === "欲しい";
+      const isL = (it) => / L( |$)/.test(" " + String(it.name || "") + " ") || /\bL\b/.test(String(it.name||""));
+      const mountChip = (it) => { const ms = mountStyle(it.mount); return '<span class="mchip" style="color:' + ms.c + ';border-color:' + ms.c + '">' + esc(it.mount || "—") + '</span>'; };
+
+      // 35mm-equivalent crop factor. Canon APS-C is 1.6×; other APS-C (Fuji X /
+      // Sony E / Nikon) is 1.5×; M4/3 = 2.0; medium format = 0.79; 1" = 2.7.
+      function cropFactor(it) {
+        const f = it.format;
+        if (f === "マイクロフォーサーズ") return 2.0;
+        if (f === "中判") return 0.79;
+        if (f === "1インチ") return 2.7;
+        if (f === "APS-C") return /^Canon/.test(String(it.mount)) ? 1.6 : 1.5;
+        return 1.0;
+      }
+      const mult = (it) => (state.equiv ? cropFactor(it) : 1);
+      const emin = (it) => fmin(it) * mult(it);
+      const emax = (it) => fmax(it) * mult(it);
+
+      function fmtRange(it) {
+        const cropped = state.equiv && cropFactor(it) !== 1;
+        const a = Math.round(emin(it)), b = Math.round(emax(it));
+        const core = (isZoom(it) ? a + "-" + b : "" + a) + "mm";
+        return (cropped ? "≈" : "") + core;
+      }
+      function fstopStr(it) {
+        const w = it.fStopWide, t = it.fStopTele;
+        if (w == null || w === "") return "";
+        return "F" + w + (t != null && t !== "" && Number(t) !== Number(w) ? "-" + t : "");
+      }
+
+      function sortItems(items) {
+        const dir = state.dir === "asc" ? 1 : -1;
+        const arr = items.slice();
+        arr.sort((a, b) => {
+          let r = 0;
+          if (state.sort === "focal") r = emin(a) - emin(b) || emax(a) - emax(b);
+          else if (state.sort === "fstop") r = (Number(a.fStopWide) || 99) - (Number(b.fStopWide) || 99);
+          else if (state.sort === "maker") r = String(a.maker).localeCompare(String(b.maker), "ja") || fmin(a) - fmin(b);
+          else if (state.sort === "name") r = String(a.name).localeCompare(String(b.name), "ja");
+          else if (state.sort === "date") {
+            const da = a.purchaseDate || "", db = b.purchaseDate || "";
+            if (!da && !db) r = 0; else if (!da) return 1; else if (!db) return -1; else r = da.localeCompare(db);
+          }
+          return r * dir;
+        });
+        return arr;
+      }
+      function filtered() {
+        return ALL.filter((it) => {
+          if (state.own !== "all" && it.ownership !== state.own) return false;
+          if (state.maker !== "all" && it.maker !== state.maker) return false;
+          if (state.mount !== "all" && it.mount !== state.mount) return false;
+          if (state.series !== "all" && series(it) !== state.series) return false;
+          return true;
+        });
+      }
+
+      // ---- log scale for focal axis ----
+      let SCALE = { lo: Math.log(8), hi: Math.log(400) };
+      function setScale(items) {
+        const mins = items.map(emin), maxs = items.map(emax);
+        const lo = Math.min(...mins, 8), hi = Math.max(...maxs, 50);
+        SCALE = { lo: Math.log(lo * 0.92), hi: Math.log(hi * 1.05) };
+      }
+      const pos = (mm) => (Math.log(mm) - SCALE.lo) / (SCALE.hi - SCALE.lo) * 100;
+
+      function renderAxis(items) {
+        const cand = [8, 10, 14, 16, 20, 24, 28, 35, 50, 70, 100, 135, 200, 300, 400];
+        const lo = Math.exp(SCALE.lo), hi = Math.exp(SCALE.hi);
+        const ticks = cand.filter((t) => t >= lo && t <= hi);
+        const grid = ticks.map((t) => '<div class="gridline" style="left:' + pos(t).toFixed(2) + '%"></div>').join("");
+        const lab = ticks.map((t) => '<div class="tick" style="left:' + pos(t).toFixed(2) + '%">' + t + '</div>').join("");
+        return { axis: '<div class="axis">' + lab + '</div>', grid };
+      }
+
+      function renderBars(items) {
+        if (!items.length) return '<div class="err">該当なし</div>';
+        setScale(items);
+        const { axis, grid } = renderAxis(items);
+        const rows = items.map((it) => {
+          const ms = mountStyle(it.mount);
+          const sold = isSold(it), wish = isWish(it);
+          const left = pos(emin(it)), right = pos(emax(it));
+          let bar;
+          if (isZoom(it)) {
+            bar = '<div class="barwrap' + (sold ? ' sold' : '') + (wish ? ' wish' : '') + '" style="left:' + left.toFixed(2) + '%;width:' + (right - left).toFixed(2) + '%">' +
+                  '<div class="b" style="background:' + ms.c + '"></div></div>' +
+                  '<div class="blabel" style="left:calc(' + right.toFixed(2) + '% + 8px)">' + fmtRange(it) + '</div>';
+          } else {
+            bar = '<div class="pt' + (wish ? ' wish' : '') + '" style="left:' + left.toFixed(2) + '%;background:' + ms.c + '"></div>' +
+                  '<div class="blabel" style="left:calc(' + left.toFixed(2) + '% + 12px)">' + fmtRange(it) + '</div>';
+          }
+          const status = sold ? "売却済み" : wish ? "欲しい" : (it.purchaseDate || "");
+          const meta = [it.maker, fstopStr(it), status].filter(Boolean).join(" · ");
+          return '<div class="row' + (sold ? ' sold' : '') + (wish ? ' wish' : '') + '" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
+            '<div class="rlabel"><div class="nm">' + (isL(it) ? '🔴 ' : '') + esc(it.name) + '</div>' +
+            '<div class="mt">' + mountChip(it) + ' ' + esc(meta) + '</div></div>' +
+            '<div class="track">' + bar + '</div></div>';
+        }).join("");
+        return axis + '<div class="rows">' + grid + rows + '</div>';
+      }
+
+      function gradFor(maker) {
+        let h = 0; const s = String(maker || "?");
+        for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+        const a = h % 360;
+        return "linear-gradient(150deg, hsl(" + a + " 42% 28%), hsl(" + ((a + 40) % 360) + " 48% 15%))";
+      }
+      function renderGallery(items) {
+        if (!items.length) return '<div class="err">該当なし</div>';
+        const cards = items.map((it) => {
+          const src = imgSrc(it.photo);
+          const sold = isSold(it), wish = isWish(it);
+          const img = src ? '<img loading="lazy" src="' + esc(src) + '" alt="" onerror="this.remove()" />' : '';
+          const ph = '<div class="ph" style="background:' + gradFor(it.maker) + '"><div class="fl">' + esc(fmtRange(it)) + '</div><div class="fn">' + esc(it.maker) + '</div></div>';
+          const ring = isL(it) ? '<div class="ring"></div>' : '';
+          const tag = sold ? '<div class="tag sold">売却済み</div>' : wish ? '<div class="tag wish">欲しい</div>' : (it.focus === "MF" ? '<div class="tag">MF</div>' : '');
+          const meta = [fstopStr(it) ? '<span class="f">' + esc(fstopStr(it)) + '</span>' : '', mountChip(it), it.purchaseDate ? '<span>' + esc(it.purchaseDate) + '</span>' : ''].filter(Boolean).join("");
+          return '<div class="card' + (sold ? ' sold' : '') + (wish ? ' wish' : '') + '" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
+            '<div class="shot">' + ph + img + ring + tag + '</div>' +
+            '<div class="cbody"><div class="nm">' + esc(it.name) + '</div><div class="meta">' + meta + '</div></div></div>';
+        }).join("");
+        return '<div class="grid">' + cards + '</div>';
+      }
+
+      function renderList(items) {
+        if (!items.length) return '<div class="err">該当なし</div>';
+        const rows = items.map((it) => {
+          const src = imgSrc(it.photo);
+          const sold = isSold(it), wish = isWish(it);
+          const thumb = '<div class="th"><span class="fl">' + esc(fmtRange(it)) + '</span>' +
+            (src ? '<img loading="lazy" src="' + esc(src) + '" alt="" onerror="this.remove()" />' : '') +
+            (isL(it) ? '<span class="ring"></span>' : '') + '</div>';
+          const sub = mountChip(it) + ' ' + esc([it.maker, it.focus].filter(Boolean).join(" · "));
+          const rt = [
+            fstopStr(it) ? '<span class="f">' + esc(fstopStr(it)) + '</span>' : '',
+            '<span>' + esc(fmtRange(it)) + '</span>',
+            it.purchaseDate ? '<span class="pd">' + esc(it.purchaseDate) + '</span>' : '',
+            sold ? '<span class="soldtag">売却</span>' : '',
+            wish ? '<span class="wishtag">欲しい</span>' : '',
+          ].filter(Boolean).join("");
+          return '<div class="li' + (sold ? ' sold' : '') + (wish ? ' wish' : '') + '" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
+            thumb +
+            '<div class="info"><div class="nm">' + esc(it.name) + '</div><div class="mt">' + sub + '</div></div>' +
+            '<div class="rt">' + rt + '</div></div>';
+        }).join("");
+        return '<div class="list">' + rows + '</div>';
+      }
+
+      function renderStats(items) {
+        const owned = items.filter((it) => it.ownership === "所有中");
+        const sold = items.filter(isSold);
+        const wish = items.filter(isWish);
+        const scope = owned.length ? owned : items;
+        const wide = Math.min(...scope.map(emin));
+        const tele = Math.max(...scope.map(emax));
+        const zooms = items.filter(isZoom).length, primes = items.length - zooms;
+        const rangeLabel = state.equiv ? "最広角〜最望遠(換算)" : "最広角〜最望遠";
+        const cells = [
+          ["表示中", items.length],
+          ["所有中", owned.length],
+          ["欲しい", wish.length],
+          ["売却済み", sold.length],
+          ["単焦点 / ズーム", primes + " / " + zooms],
+          [rangeLabel, (isFinite(wide) ? Math.round(wide) : "—") + "〜" + (isFinite(tele) ? Math.round(tele) : "—") + "mm"],
+        ];
+        document.getElementById("stats").innerHTML = cells.map(([l, n]) =>
+          '<div class="stat"><div class="n">' + esc(n) + '</div><div class="l">' + esc(l) + '</div></div>').join("");
+      }
+
+      function render() {
+        const items = sortItems(filtered());
+        renderStats(items);
+        const html = state.mode === "bars" ? renderBars(items) : state.mode === "list" ? renderList(items) : renderGallery(items);
+        document.getElementById("root").innerHTML = html;
+      }
+
+      function wireSeg(id, key) {
+        document.getElementById(id).addEventListener("click", (e) => {
+          const btn = e.target.closest("button"); if (!btn) return;
+          state[key] = btn.dataset.v;
+          [...e.currentTarget.children].forEach((b) => b.classList.toggle("on", b === btn));
+          render();
+        });
+      }
+
+      async function main() {
+        const { token, dataUrl } = window.__MC_VIEW;
+        const res = await fetch(dataUrl, { headers: { Authorization: "Bearer " + token } });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        ALL = (await res.json()).items || [];
+        document.getElementById("sub").textContent = "全 " + ALL.length + " 本 · クリックで詳細へ";
+
+        const uniqSorted = (vals) => [...new Set(vals.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), "ja"));
+        function fillSelect(id, values, allLabel) {
+          const sel = document.getElementById(id);
+          sel.innerHTML = '<option value="all">' + esc(allLabel) + '</option>' +
+            values.map((v) => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join("");
+        }
+        fillSelect("fmaker", uniqSorted(ALL.map((it) => it.maker)), "メーカー：すべて");
+        fillSelect("fmount", uniqSorted(ALL.map((it) => it.mount)), "マウント：すべて");
+        fillSelect("fseries", uniqSorted(ALL.map(series)), "シリーズ：すべて");
+
+        wireSeg("mode", "mode");
+        wireSeg("dir", "dir");
+        document.getElementById("sort").addEventListener("change", (e) => { state.sort = e.target.value; render(); });
+        document.getElementById("own").addEventListener("change", (e) => { state.own = e.target.value; render(); });
+        document.getElementById("fmaker").addEventListener("change", (e) => { state.maker = e.target.value; render(); });
+        document.getElementById("fmount").addEventListener("change", (e) => { state.mount = e.target.value; render(); });
+        document.getElementById("fseries").addEventListener("change", (e) => { state.series = e.target.value; render(); });
+        document.getElementById("reset").addEventListener("click", () => {
+          state.own = state.maker = state.mount = state.series = "all";
+          for (const id of ["own", "fmaker", "fmount", "fseries"]) document.getElementById(id).value = "all";
+          render();
+        });
+        document.getElementById("equiv").addEventListener("click", (e) => {
+          const btn = e.target.closest("button"); if (!btn) return;
+          state.equiv = btn.dataset.v === "on";
+          [...e.currentTarget.children].forEach((b) => b.classList.toggle("on", b === btn));
+          render();
+        });
+        const root = document.getElementById("root");
+        root.addEventListener("click", (e) => { const el = e.target.closest("[data-id]"); if (el) openItem(el.dataset.id); });
+        root.addEventListener("keydown", (e) => { if (e.key !== "Enter" && e.key !== " ") return; const el = e.target.closest("[data-id]"); if (el) { e.preventDefault(); openItem(el.dataset.id); } });
+        render();
+      }
+      main().catch((e) => { document.getElementById("root").innerHTML = '<div class="err">読み込み失敗: ' + esc(e.message) + '</div>'; });
+    </script>
+  </body>
+</html>

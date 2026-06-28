@@ -1,0 +1,22 @@
+{
+  "id": "om-12-40mm-f28-pro",
+  "name": "OM System M.Zuiko 12-40mm F2.8 PRO",
+  "maker": "OM System / Olympus",
+  "mount": "Micro Four Thirds",
+  "focalLengthMin": 12,
+  "focalLengthMax": 40,
+  "fStopWide": 2.8,
+  "format": "マイクロフォーサーズ",
+  "focus": "AF",
+  "ownership": "所有中",
+  "hasStabilizer": false,
+  "hasDustMoistureResistance": true,
+  "isInternalFocus": true,
+  "minFocusDistance": 0.2,
+  "maxMagnification": 0.3,
+  "bladesCount": 7,
+  "filterDiameter": 62,
+  "weight": 382,
+  "releaseDate": "2013",
+  "notes": "M4/3 標準ズーム。35mm換算 約24-80mm。サンプルレコード。"
+}

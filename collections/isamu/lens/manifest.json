@@ -1,0 +1,14 @@
+{
+  "files": [
+    "SKILL.md",
+    "meta.json",
+    "schema.json",
+    "seed/items/canon-rf-24-105mm-f4l.json",
+    "seed/items/canon-rf-50mm-f18-stm.json",
+    "seed/items/fujifilm-xf-35mm-f14.json",
+    "seed/items/om-12-40mm-f28-pro.json",
+    "seed/items/sigma-18-50mm-f28-dcdn.json",
+    "seed/items/sony-fe-70-200mm-f28-gm.json",
+    "views/zukan.html"
+  ]
+}

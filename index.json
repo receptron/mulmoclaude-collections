@@ -1,8 +1,32 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-26T21:43:37.843Z",
+  "generatedAt": "2026-06-27T23:25:01.690Z",
   "registry": "receptron/mulmoclaude-collections",
   "collections": [
+    {
+      "id": "isamu/lens",
+      "author": "isamu",
+      "slug": "lens",
+      "title": "カメラのレンズ",
+      "icon": "camera",
+      "description": "所有・気になっているカメラレンズを記録するコレクション。焦点距離・F値・マウント・対応フォーマットなどのスペックを管理し、焦点距離バー・35mm換算トグル・マウント/フォーマット絞り込みを備えた『図鑑』カスタムビューで手持ちのレンズ資産を一覧できる。",
+      "version": "1.0.0",
+      "tags": [
+        "photography",
+        "camera",
+        "gear",
+        "personal"
+      ],
+      "license": "MIT",
+      "fieldCount": 33,
+      "views": [
+        "図鑑"
+      ],
+      "hasSeed": true,
+      "seedCount": 6,
+      "path": "collections/isamu/lens",
+      "contentSha": "ffc1739615aa4a68"
+    },
     {
       "id": "isamu/movies",
       "author": "isamu",

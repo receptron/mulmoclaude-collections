@@ -1,0 +1,20 @@
+{
+  "id": "canon-rf-50mm-f18-stm",
+  "name": "Canon RF 50mm F1.8 STM",
+  "maker": "Canon",
+  "mount": "Canon RF",
+  "focalLengthMin": 50,
+  "fStopWide": 1.8,
+  "format": "フルサイズ",
+  "focus": "AF",
+  "ownership": "所有中",
+  "hasStabilizer": false,
+  "isInternalFocus": false,
+  "minFocusDistance": 0.3,
+  "maxMagnification": 0.25,
+  "bladesCount": 7,
+  "filterDiameter": 43,
+  "weight": 160,
+  "releaseDate": "2020",
+  "notes": "軽量・安価な標準単焦点。サンプルレコード。"
+}

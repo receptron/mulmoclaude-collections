@@ -1,0 +1,22 @@
+{
+  "id": "sigma-18-50mm-f28-dcdn",
+  "name": "Sigma 18-50mm F2.8 DC DN | Contemporary",
+  "maker": "Sigma",
+  "mount": "Sony E",
+  "focalLengthMin": 18,
+  "focalLengthMax": 50,
+  "fStopWide": 2.8,
+  "format": "APS-C",
+  "focus": "AF",
+  "ownership": "所有中",
+  "hasStabilizer": false,
+  "hasDustMoistureResistance": true,
+  "isInternalFocus": false,
+  "minFocusDistance": 0.121,
+  "maxMagnification": 0.35,
+  "bladesCount": 7,
+  "filterDiameter": 55,
+  "weight": 290,
+  "releaseDate": "2021",
+  "notes": "小型軽量な APS-C 標準ズーム。サンプルレコード。"
+}
