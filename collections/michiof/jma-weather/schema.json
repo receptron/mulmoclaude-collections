@@ -72,7 +72,7 @@
         "level": {
           "type": "enum",
           "label": "レベル",
-          "values": ["special", "warning", "advisory"]
+          "values": ["special", "danger", "warning", "advisory"]
         },
         "status": {
           "type": "string",

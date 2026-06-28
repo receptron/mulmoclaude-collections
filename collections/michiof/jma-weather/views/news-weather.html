@@ -114,7 +114,15 @@
         letter-spacing: 0.02em;
         white-space: nowrap;
       }
+      /* 警戒レベル相当の色: 5=黒紫 / 4=紫 / 3=赤 / 2=黄 (内閣府ガイドラインに準拠)
+         2026-05-29 改革で "danger" = レベル4危険警報 階層が新設された。 */
       .warn-pill.level-special {
+        background: linear-gradient(135deg, #1a0020, #4a0a5e);
+        color: #fff;
+        border: 1px solid #6b0f8a;
+        box-shadow: 0 0 0 2px rgba(107, 15, 138, 0.30);
+      }
+      .warn-pill.level-danger {
         background: linear-gradient(135deg, #8a1ea3, #5a1370);
         color: #fff;
         border: 1px solid #c75ee3;
@@ -141,12 +149,17 @@
         font-size: 10px;
         color: var(--text-faint);
       }
-      /* 特別警報があるときは赤紫の縁取りで視認性を上げる */
+      /* 特別警報があるときは黒紫の縁取りで最高度の視認性 */
       .warning-bar.has-special {
+        border-color: #6b0f8a;
+        background: linear-gradient(180deg, rgba(26, 0, 32, 0.40), var(--card-strong));
+      }
+      /* 危険警報 (レベル4) — 特別警報が無いときに紫の縁取り */
+      .warning-bar.has-danger:not(.has-special) {
         border-color: #c75ee3;
         background: linear-gradient(180deg, rgba(138, 30, 163, 0.18), var(--card-strong));
       }
-      .warning-bar.has-warning:not(.has-special) {
+      .warning-bar.has-warning:not(.has-special):not(.has-danger) {
         border-color: #ff5d50;
       }
 
@@ -1729,6 +1742,7 @@
           metaHtml;
         el.style.display = "";
         el.classList.toggle("has-special", active.some((w) => w.level === "special"));
+        el.classList.toggle("has-danger",  active.some((w) => w.level === "danger"));
         el.classList.toggle("has-warning", active.some((w) => w.level === "warning"));
       }
 

@@ -159,21 +159,45 @@ WEATHER_CODE_MAP = {
 
 
 # JMA 警報・注意報コード → (和文名, レベル)
-# レベル: "special" (特別警報) / "warning" (警報) / "advisory" (注意報)
-# コード対応は bosai/warning/data/r8/ の実データから裏取り。03/07/14/15/16/20/29 は
-# headline と additions で確認済み、他は出現実例が少なく JMA 標準仕様からの推定。
-# code 29 (土砂災害警戒情報) は同一 code 内で status により警戒度が変動するので、
-# 実際の (name, level) 解決は resolve_warning() で行う。ここの level は発表/継続時のデフォルト。
+# レベル: "special" (特別警報, レベル5) / "danger" (危険警報, レベル4, 2026-05-29 新設)
+#       / "warning" (警報, レベル3) / "advisory" (注意報, レベル2)
+#
+# 2026-05-29 から JMA は「警戒レベル」と整合させた新呼称体系を運用開始:
+#   - 河川氾濫・大雨・土砂災害・高潮 の情報名に「レベル○」を冠する
+#     (例: 大雨警報 → レベル3大雨警報、大雨注意報 → レベル2大雨注意報)
+#   - レベル4相当に「危険警報」階層を新設
+#     (例: 土砂災害警戒情報 → レベル4土砂災害危険警報)
+#   - 気象台発表の市町村単位の洪水警報・注意報は廃止 (洪水予報河川・水位周知河川は
+#     河川事務所/都道府県が河川単位で発表)
+#   - 風雪・雷・乾燥・濃霧等は警戒レベル相当情報の対象外、旧名のまま
+# 一次情報: https://www.jma.go.jp/jma/kishou/know/bosai/keiho-update2026/
+#
+# code 29 (土砂災害危険度) は同一 code 内で重大度が変動するため、ここではフォールバック
+# 名のみ載せ、実際の (name, level) は resolve_warning() が properties から解決する。
 WARNING_CODE_MAP: dict[str, tuple[str, str]] = {
+    # ───── 警戒レベル名を冠する (2026-05-29 改革対象) ─────
+    # 大雨系
+    "03": ("レベル3大雨警報",     "warning"),
+    "10": ("レベル2大雨注意報",   "advisory"),
+    "12": ("レベル5大雨特別警報", "special"),
+    "33": ("レベル5大雨特別警報", "special"),
+    # 高潮系 (レベル4高潮危険警報の r8 新コードは現時点で未確認)
+    "08": ("レベル3高潮警報",     "warning"),
+    "21": ("レベル2高潮注意報",   "advisory"),
+    "38": ("レベル5高潮特別警報", "special"),
+    # 洪水系 (気象台発表は原則廃止、当面は大雨情報内で扱われる。
+    # 旧コードが残留する可能性に備えて保持)
+    "04": ("洪水警報",   "warning"),
+    "25": ("洪水注意報", "advisory"),
+    # 土砂災害 (本物のレベル決定は resolve_warning() で properties.significancyPart.locals
+    # から動的に行う。ここは properties が無い場合のフォールバック表示用)
+    "29": ("土砂災害情報", "warning"),
+
+    # ───── 警戒レベル相当情報の対象外、呼称変更なし ─────
     "02": ("暴風警報",     "warning"),
-    "03": ("大雨警報",     "warning"),
-    "04": ("洪水警報",     "warning"),
     "05": ("暴風雪警報",   "warning"),
     "06": ("大雪警報",     "warning"),
     "07": ("波浪警報",     "warning"),
-    "08": ("高潮警報",     "warning"),
-    "10": ("大雨注意報",   "advisory"),
-    "12": ("大雨特別警報", "special"),
     "14": ("雷注意報",     "advisory"),
     "15": ("強風注意報",   "advisory"),
     "16": ("波浪注意報",   "advisory"),
@@ -181,20 +205,25 @@ WARNING_CODE_MAP: dict[str, tuple[str, str]] = {
     "18": ("着雪注意報",   "advisory"),
     "19": ("融雪注意報",   "advisory"),
     "20": ("濃霧注意報",   "advisory"),
-    "21": ("高潮注意報",   "advisory"),
     "22": ("低温注意報",   "advisory"),
     "23": ("霜注意報",     "advisory"),
     "24": ("乾燥注意報",   "advisory"),
-    "25": ("洪水注意報",   "advisory"),
     "26": ("なだれ注意報", "advisory"),
     "27": ("その他の注意報","advisory"),
-    "29": ("土砂災害警戒情報", "warning"),
     "32": ("暴風雪特別警報","special"),
-    "33": ("大雨特別警報",  "special"),
     "35": ("大雪特別警報",  "special"),
     "36": ("暴風特別警報",  "special"),
     "37": ("波浪特別警報",  "special"),
-    "38": ("高潮特別警報",  "special"),
+}
+
+
+# code 29 (土砂災害危険度) の properties.significancyPart.locals[].code → (表示名, レベル)
+# 2026-05-29 改革の新呼称に従う。"危険警報" 階層が新設されたためレベルは "danger" を使う。
+SEDIMENT_LOCALS_MAP: dict[str, tuple[str, str]] = {
+    "21": ("レベル2土砂災害注意報",   "advisory"),
+    "22": ("レベル3土砂災害警報",     "warning"),
+    "23": ("レベル4土砂災害危険警報", "danger"),   # 旧「土砂災害警戒情報」
+    "24": ("レベル5土砂災害特別警報", "special"),
 }
 
 
@@ -206,48 +235,87 @@ WARNING_CODE_MAP: dict[str, tuple[str, str]] = {
 #   "警報から注意報"        — 警報レベルから注意報レベルに緩和した結果、現在は注意報レベル
 #                              code 側が既に "注意報" 系の番号 (例: code 16 = 波浪注意報) なので
 #                              現在状態の表示名は code 通りで OK。降格の事実だけ補助表示。
-#   "危険警報から注意報"     — 土砂災害警戒情報 (code 29) が注意報レベルに緩和した状態。
-#                              code 29 は同一 code 内で警戒度が変動するので、resolve_warning で
-#                              "土砂災害(注意レベル)/advisory" として扱う。
-#   "危険警報から警報"      — 土砂災害警戒情報 (code 29) が警報レベルに緩和した状態。
-#                              "大雨警報(土砂災害相当)/warning" として扱う。
+#   "危険警報から注意報"     — 土砂災害 (code 29) が注意報レベルに緩和した状態。
+#                              通常は properties.significancyPart.locals[].code で重大度判定するが、
+#                              properties が無い古い entry のフォールバックで status からも判定する。
+#   "危険警報から警報"      — 土砂災害 (code 29) が警報レベルに緩和した状態。同上。
 
 # active から除外する status (= 現在発表中ではない / 該当無し)
 INACTIVE_STATUSES = ("解除", "発表警報・注意報はなし", "")
 
 
-def resolve_warning(code: str, status: str) -> tuple[str, str, str]:
-    """code + status の組み合わせから (表示名, レベル, 補助ラベル) を返す。
+def resolve_warning(
+    code: str,
+    status: str,
+    properties: list | None = None,
+) -> tuple[str, str, str]:
+    """code + status (+ properties) から (表示名, レベル, 補助ラベル) を返す。
+
+    2026-05-29 改革後の新呼称体系に従う (例: 大雨警報 → レベル3大雨警報、
+    土砂災害警戒情報 → レベル4土砂災害危険警報)。"危険警報" 階層 (レベル4) は
+    新規追加された段階で、戻り値 level に "danger" を使う。
 
     通常の code は WARNING_CODE_MAP の (name, level) をそのまま返し、status は補助ラベルへ。
-    code 29 (土砂災害警戒情報) は同一 code 内で警戒度レベルが変動するので status を見て分岐:
-      - 発表/継続 → 土砂災害警戒情報 (warning)
-      - 危険警報から注意報 → 土砂災害(注意レベル) (advisory)
-      - 危険警報から警報 → 大雨警報(土砂災害相当) (warning)
 
-    返り値の補助ラベル (status_label) は UI 側で「直前まで警報レベルだった」等の補足表示用。
+    code 29 (土砂災害) は 1 つの code 内で重大度が変動するため、properties.
+    significancyPart.locals[].code を読んで分岐する:
+      21 → レベル2土砂災害注意報   (advisory)
+      22 → レベル3土砂災害警報     (warning)
+      23 → レベル4土砂災害危険警報 (danger)   ← 旧「土砂災害警戒情報」
+      24 → レベル5土砂災害特別警報 (special)
+    properties が無い古い entry の場合は status で分岐するフォールバックを使う。
+
+    返り値の補助ラベル (status_label) は UI 側で「警報から注意報に降格」等の補足表示用。
     INACTIVE な status (解除など) が来た場合は ("", "", "") を返す (active 集合に含めない合図)。
     """
     if status in INACTIVE_STATUSES:
         return ("", "", "")
 
-    # 土砂災害警戒情報 (キキクル) の特殊扱い
+    # 土砂災害 (キキクル) — properties から重大度を決定するのが正
     if code == "29":
-        if status in ("発表", "継続"):
-            return ("土砂災害警戒情報", "warning", status)
+        top_local = _sediment_top_local(properties)
+        if top_local and top_local in SEDIMENT_LOCALS_MAP:
+            name, level = SEDIMENT_LOCALS_MAP[top_local]
+            return (name, level, status)
+        # properties が無い / 解釈できない古い entry のフォールバック (status ベース)
         if status == "危険警報から注意報":
-            # 警戒情報レベル (レベル4) から注意報レベル (レベル2) に緩和
-            return ("土砂災害(注意レベル)", "advisory", "警戒情報→注意報")
+            return ("レベル2土砂災害注意報", "advisory", "危険警報→注意報")
         if status == "危険警報から警報":
-            # 警戒情報レベルから警報レベル (レベル3) に緩和
-            return ("大雨警報(土砂災害相当)", "warning", "警戒情報→警報")
-        # 想定外の status はとりあえず警戒情報のままで補助ラベルに status を出す
-        return ("土砂災害警戒情報", "warning", status)
+            return ("レベル3土砂災害警報", "warning", "危険警報→警報")
+        # status が "発表" / "継続" 等で properties 不明 → 警戒度判定不能。
+        # 安全側に倒し、フォールバックの汎用名で出す (UI で気づけるよう補助ラベルに警告を残す)。
+        return ("土砂災害情報", "warning", f"重大度不明({status})")
 
     # 通常 code: WARNING_CODE_MAP の (name, level) をそのまま返す
     name, level = WARNING_CODE_MAP.get(code, (f"コード:{code}", "advisory"))
     # "警報から注意報" のような降格 status はそのまま補助ラベルに残す (UI 側で区別表示可能)
     return (name, level, status)
+
+
+def _sediment_top_local(properties: list | None) -> str | None:
+    """code 29 の properties から最高重大度の locals.code を取り出す。
+
+    properties は通常 [{"type":"土砂災害危険度","significancyPart":{"locals":[{"code":"21"},...]}}]
+    の形。locals に複数の code が並ぶ場合は数値最大 (= 最も警戒度高) を採用する。
+    取り出せない場合は None。
+    """
+    if not properties:
+        return None
+    candidates: list[str] = []
+    for prop in properties:
+        if not isinstance(prop, dict):
+            continue
+        sp = prop.get("significancyPart") or {}
+        for local in sp.get("locals") or []:
+            if isinstance(local, dict) and local.get("code"):
+                candidates.append(str(local["code"]))
+    if not candidates:
+        return None
+    # 数字化できるものは数値比較、それ以外は無視 (= 最大値を採用)
+    numeric = [c for c in candidates if c.isdigit()]
+    if numeric:
+        return max(numeric, key=lambda c: int(c))
+    return candidates[0]
 
 
 def weather_code_to_text(code: str) -> str:
@@ -1451,15 +1519,16 @@ def fetch_warnings(out_dir: Path, now_iso: str) -> tuple[int, int]:
                                 "status": status,
                                 "reportDatetime": rt,
                                 "additions": k.get("additions") or [],
+                                "properties": k.get("properties") or [],
                                 "areaCode": area_code,
                             }
 
-        # アクティブ判定 — resolve_warning で code+status から (name, level, status_label) を取る。
-        # 空文字 name のものは INACTIVE (解除等) のサイン。
+        # アクティブ判定 — resolve_warning で code+status+properties から
+        # (name, level, status_label) を取る。空文字 name のものは INACTIVE (解除等) のサイン。
         active: list[dict] = []
         for code, st in code_state.items():
             status = st["status"]
-            name, level, status_label = resolve_warning(code, status)
+            name, level, status_label = resolve_warning(code, status, st.get("properties"))
             if not name:
                 continue
             item = {
@@ -1490,8 +1559,9 @@ def fetch_warnings(out_dir: Path, now_iso: str) -> tuple[int, int]:
             "warnings": active,
             "updatedAt": now_iso,
         }
-        # ソート: special → warning → advisory、各レベル内はコード昇順
-        level_order = {"special": 0, "warning": 1, "advisory": 2}
+        # ソート: special → danger → warning → advisory、各レベル内はコード昇順
+        # (2026-05-29 改革で "danger" = レベル4危険警報 階層が新設された)
+        level_order = {"special": 0, "danger": 1, "warning": 2, "advisory": 3}
         rec["warnings"].sort(key=lambda w: (level_order.get(w["level"], 9), w["code"]))
 
         try:
