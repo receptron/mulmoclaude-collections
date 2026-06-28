@@ -24,6 +24,7 @@ LLM を使わずに動作する純粋なスクリプト。
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -59,7 +60,9 @@ TOKYO_23WARDS = [
     "1311800", "1311900", "1312000",                          # 荒川・板橋・練馬
     "1312100", "1312200", "1312300",                          # 足立・葛飾・江戸川
 ]
-CITIES_CONFIG = [
+# フォールバック用の組込みロスター。実行時に items/config.json があればそちらで上書きする
+# (CITIES_CONFIG / DEFAULT_CITY_OFFICE は main() で load_cities_config() の結果に置き換わる)。
+_BUILTIN_CITIES = [
     {"office": "016000", "name": "札幌",   "region": "北海道",   "area_code": "016010", "warning_areas": ["0110000"], "temp_code": "47412", "amedas_code": "14163", "order": 1},
     {"office": "040000", "name": "仙台",   "region": "宮城県",   "area_code": "040010", "warning_areas": ["0410001", "0410002"], "temp_code": "47590", "amedas_code": "34392", "order": 2},
     {"office": "150000", "name": "新潟",   "region": "新潟県",   "area_code": "150010", "warning_areas": ["1510000"], "temp_code": "47604", "amedas_code": "54232", "order": 3},
@@ -73,9 +76,51 @@ CITIES_CONFIG = [
     {"office": "400000", "name": "福岡",   "region": "福岡県",   "area_code": "400010", "warning_areas": ["4013000"], "temp_code": "47807", "amedas_code": "82182", "order": 10},
     {"office": "471000", "name": "那覇",   "region": "沖縄本島", "area_code": "471010", "warning_areas": ["4720100"], "temp_code": "47936", "amedas_code": "91197", "order": 11},
 ]
+_BUILTIN_DEFAULT_CITY_OFFICE = "140000"
 
-# 既定の「指定地域」(view が初期表示する都市)
-DEFAULT_CITY_OFFICE = "140000"
+# 実行時に main() で config.json から上書きされるグローバル (無ければ組込みを使う)。
+CITIES_CONFIG = _BUILTIN_CITIES
+DEFAULT_CITY_OFFICE = _BUILTIN_DEFAULT_CITY_OFFICE
+
+
+def load_cities_config(out_dir: Path) -> "tuple[list, str]":
+    """items/config.json (source=config レコード) を読み、(CITIES_CONFIG 相当, 既定office) を返す。
+
+    ユーザー設定 (どの都市・既定都市) を共有コードから隔離するための config 層。
+    config.json が無い / 壊れている場合は組込みロスターにフォールバックする。
+
+    config の city 形:
+      { office, name, region, order, codes:{area, temp, amedas, warning:[...]}, map?:{...} }
+    を fetch.py 内部形 {office, name, region, area_code, warning_areas, temp_code, amedas_code, order}
+    に変換する。
+    """
+    path = out_dir / "config.json"
+    if not path.exists():
+        return _BUILTIN_CITIES, _BUILTIN_DEFAULT_CITY_OFFICE
+    try:
+        with open(path, encoding="utf-8") as f:
+            cfg = json.load(f)
+        cities = []
+        for c in cfg.get("cities", []):
+            codes = c.get("codes", {})
+            cities.append({
+                "office": c["office"],
+                "name": c.get("name", ""),
+                "region": c.get("region", ""),
+                "area_code": codes.get("area", ""),
+                "warning_areas": codes.get("warning", []),
+                "temp_code": codes.get("temp", ""),
+                "amedas_code": codes.get("amedas", ""),
+                "order": c.get("order", 99),
+            })
+        if not cities:
+            return _BUILTIN_CITIES, _BUILTIN_DEFAULT_CITY_OFFICE
+        cities.sort(key=lambda x: x.get("order", 99))
+        default_office = cfg.get("defaultCity") or cities[0]["office"]
+        return cities, default_office
+    except Exception as e:
+        print(f"[warn] config.json 読み込み失敗、組込みロスターを使用: {e}", file=sys.stderr)
+        return _BUILTIN_CITIES, _BUILTIN_DEFAULT_CITY_OFFICE
 
 # JMA 天気コード → 短い和文
 WEATHER_CODE_MAP = {
@@ -114,21 +159,45 @@ WEATHER_CODE_MAP = {
 
 
 # JMA 警報・注意報コード → (和文名, レベル)
-# レベル: "special" (特別警報) / "warning" (警報) / "advisory" (注意報)
-# コード対応は bosai/warning/data/r8/ の実データから裏取り。03/07/14/15/16/20/29 は
-# headline と additions で確認済み、他は出現実例が少なく JMA 標準仕様からの推定。
-# code 29 (土砂災害警戒情報) は同一 code 内で status により警戒度が変動するので、
-# 実際の (name, level) 解決は resolve_warning() で行う。ここの level は発表/継続時のデフォルト。
+# レベル: "special" (特別警報, レベル5) / "danger" (危険警報, レベル4, 2026-05-29 新設)
+#       / "warning" (警報, レベル3) / "advisory" (注意報, レベル2)
+#
+# 2026-05-29 から JMA は「警戒レベル」と整合させた新呼称体系を運用開始:
+#   - 河川氾濫・大雨・土砂災害・高潮 の情報名に「レベル○」を冠する
+#     (例: 大雨警報 → レベル3大雨警報、大雨注意報 → レベル2大雨注意報)
+#   - レベル4相当に「危険警報」階層を新設
+#     (例: 土砂災害警戒情報 → レベル4土砂災害危険警報)
+#   - 気象台発表の市町村単位の洪水警報・注意報は廃止 (洪水予報河川・水位周知河川は
+#     河川事務所/都道府県が河川単位で発表)
+#   - 風雪・雷・乾燥・濃霧等は警戒レベル相当情報の対象外、旧名のまま
+# 一次情報: https://www.jma.go.jp/jma/kishou/know/bosai/keiho-update2026/
+#
+# code 29 (土砂災害危険度) は同一 code 内で重大度が変動するため、ここではフォールバック
+# 名のみ載せ、実際の (name, level) は resolve_warning() が properties から解決する。
 WARNING_CODE_MAP: dict[str, tuple[str, str]] = {
+    # ───── 警戒レベル名を冠する (2026-05-29 改革対象) ─────
+    # 大雨系
+    "03": ("レベル3大雨警報",     "warning"),
+    "10": ("レベル2大雨注意報",   "advisory"),
+    "12": ("レベル5大雨特別警報", "special"),
+    "33": ("レベル5大雨特別警報", "special"),
+    # 高潮系 (レベル4高潮危険警報の r8 新コードは現時点で未確認)
+    "08": ("レベル3高潮警報",     "warning"),
+    "21": ("レベル2高潮注意報",   "advisory"),
+    "38": ("レベル5高潮特別警報", "special"),
+    # 洪水系 (気象台発表は原則廃止、当面は大雨情報内で扱われる。
+    # 旧コードが残留する可能性に備えて保持)
+    "04": ("洪水警報",   "warning"),
+    "25": ("洪水注意報", "advisory"),
+    # 土砂災害 (本物のレベル決定は resolve_warning() で properties.significancyPart.locals
+    # から動的に行う。ここは properties が無い場合のフォールバック表示用)
+    "29": ("土砂災害情報", "warning"),
+
+    # ───── 警戒レベル相当情報の対象外、呼称変更なし ─────
     "02": ("暴風警報",     "warning"),
-    "03": ("大雨警報",     "warning"),
-    "04": ("洪水警報",     "warning"),
     "05": ("暴風雪警報",   "warning"),
     "06": ("大雪警報",     "warning"),
     "07": ("波浪警報",     "warning"),
-    "08": ("高潮警報",     "warning"),
-    "10": ("大雨注意報",   "advisory"),
-    "12": ("大雨特別警報", "special"),
     "14": ("雷注意報",     "advisory"),
     "15": ("強風注意報",   "advisory"),
     "16": ("波浪注意報",   "advisory"),
@@ -136,20 +205,25 @@ WARNING_CODE_MAP: dict[str, tuple[str, str]] = {
     "18": ("着雪注意報",   "advisory"),
     "19": ("融雪注意報",   "advisory"),
     "20": ("濃霧注意報",   "advisory"),
-    "21": ("高潮注意報",   "advisory"),
     "22": ("低温注意報",   "advisory"),
     "23": ("霜注意報",     "advisory"),
     "24": ("乾燥注意報",   "advisory"),
-    "25": ("洪水注意報",   "advisory"),
     "26": ("なだれ注意報", "advisory"),
     "27": ("その他の注意報","advisory"),
-    "29": ("土砂災害警戒情報", "warning"),
     "32": ("暴風雪特別警報","special"),
-    "33": ("大雨特別警報",  "special"),
     "35": ("大雪特別警報",  "special"),
     "36": ("暴風特別警報",  "special"),
     "37": ("波浪特別警報",  "special"),
-    "38": ("高潮特別警報",  "special"),
+}
+
+
+# code 29 (土砂災害危険度) の properties.significancyPart.locals[].code → (表示名, レベル)
+# 2026-05-29 改革の新呼称に従う。"危険警報" 階層が新設されたためレベルは "danger" を使う。
+SEDIMENT_LOCALS_MAP: dict[str, tuple[str, str]] = {
+    "21": ("レベル2土砂災害注意報",   "advisory"),
+    "22": ("レベル3土砂災害警報",     "warning"),
+    "23": ("レベル4土砂災害危険警報", "danger"),   # 旧「土砂災害警戒情報」
+    "24": ("レベル5土砂災害特別警報", "special"),
 }
 
 
@@ -161,48 +235,87 @@ WARNING_CODE_MAP: dict[str, tuple[str, str]] = {
 #   "警報から注意報"        — 警報レベルから注意報レベルに緩和した結果、現在は注意報レベル
 #                              code 側が既に "注意報" 系の番号 (例: code 16 = 波浪注意報) なので
 #                              現在状態の表示名は code 通りで OK。降格の事実だけ補助表示。
-#   "危険警報から注意報"     — 土砂災害警戒情報 (code 29) が注意報レベルに緩和した状態。
-#                              code 29 は同一 code 内で警戒度が変動するので、resolve_warning で
-#                              "土砂災害(注意レベル)/advisory" として扱う。
-#   "危険警報から警報"      — 土砂災害警戒情報 (code 29) が警報レベルに緩和した状態。
-#                              "大雨警報(土砂災害相当)/warning" として扱う。
+#   "危険警報から注意報"     — 土砂災害 (code 29) が注意報レベルに緩和した状態。
+#                              通常は properties.significancyPart.locals[].code で重大度判定するが、
+#                              properties が無い古い entry のフォールバックで status からも判定する。
+#   "危険警報から警報"      — 土砂災害 (code 29) が警報レベルに緩和した状態。同上。
 
 # active から除外する status (= 現在発表中ではない / 該当無し)
 INACTIVE_STATUSES = ("解除", "発表警報・注意報はなし", "")
 
 
-def resolve_warning(code: str, status: str) -> tuple[str, str, str]:
-    """code + status の組み合わせから (表示名, レベル, 補助ラベル) を返す。
+def resolve_warning(
+    code: str,
+    status: str,
+    properties: list | None = None,
+) -> tuple[str, str, str]:
+    """code + status (+ properties) から (表示名, レベル, 補助ラベル) を返す。
+
+    2026-05-29 改革後の新呼称体系に従う (例: 大雨警報 → レベル3大雨警報、
+    土砂災害警戒情報 → レベル4土砂災害危険警報)。"危険警報" 階層 (レベル4) は
+    新規追加された段階で、戻り値 level に "danger" を使う。
 
     通常の code は WARNING_CODE_MAP の (name, level) をそのまま返し、status は補助ラベルへ。
-    code 29 (土砂災害警戒情報) は同一 code 内で警戒度レベルが変動するので status を見て分岐:
-      - 発表/継続 → 土砂災害警戒情報 (warning)
-      - 危険警報から注意報 → 土砂災害(注意レベル) (advisory)
-      - 危険警報から警報 → 大雨警報(土砂災害相当) (warning)
 
-    返り値の補助ラベル (status_label) は UI 側で「直前まで警報レベルだった」等の補足表示用。
+    code 29 (土砂災害) は 1 つの code 内で重大度が変動するため、properties.
+    significancyPart.locals[].code を読んで分岐する:
+      21 → レベル2土砂災害注意報   (advisory)
+      22 → レベル3土砂災害警報     (warning)
+      23 → レベル4土砂災害危険警報 (danger)   ← 旧「土砂災害警戒情報」
+      24 → レベル5土砂災害特別警報 (special)
+    properties が無い古い entry の場合は status で分岐するフォールバックを使う。
+
+    返り値の補助ラベル (status_label) は UI 側で「警報から注意報に降格」等の補足表示用。
     INACTIVE な status (解除など) が来た場合は ("", "", "") を返す (active 集合に含めない合図)。
     """
     if status in INACTIVE_STATUSES:
         return ("", "", "")
 
-    # 土砂災害警戒情報 (キキクル) の特殊扱い
+    # 土砂災害 (キキクル) — properties から重大度を決定するのが正
     if code == "29":
-        if status in ("発表", "継続"):
-            return ("土砂災害警戒情報", "warning", status)
+        top_local = _sediment_top_local(properties)
+        if top_local and top_local in SEDIMENT_LOCALS_MAP:
+            name, level = SEDIMENT_LOCALS_MAP[top_local]
+            return (name, level, status)
+        # properties が無い / 解釈できない古い entry のフォールバック (status ベース)
         if status == "危険警報から注意報":
-            # 警戒情報レベル (レベル4) から注意報レベル (レベル2) に緩和
-            return ("土砂災害(注意レベル)", "advisory", "警戒情報→注意報")
+            return ("レベル2土砂災害注意報", "advisory", "危険警報→注意報")
         if status == "危険警報から警報":
-            # 警戒情報レベルから警報レベル (レベル3) に緩和
-            return ("大雨警報(土砂災害相当)", "warning", "警戒情報→警報")
-        # 想定外の status はとりあえず警戒情報のままで補助ラベルに status を出す
-        return ("土砂災害警戒情報", "warning", status)
+            return ("レベル3土砂災害警報", "warning", "危険警報→警報")
+        # status が "発表" / "継続" 等で properties 不明 → 警戒度判定不能。
+        # 安全側に倒し、フォールバックの汎用名で出す (UI で気づけるよう補助ラベルに警告を残す)。
+        return ("土砂災害情報", "warning", f"重大度不明({status})")
 
     # 通常 code: WARNING_CODE_MAP の (name, level) をそのまま返す
     name, level = WARNING_CODE_MAP.get(code, (f"コード:{code}", "advisory"))
     # "警報から注意報" のような降格 status はそのまま補助ラベルに残す (UI 側で区別表示可能)
     return (name, level, status)
+
+
+def _sediment_top_local(properties: list | None) -> str | None:
+    """code 29 の properties から最高重大度の locals.code を取り出す。
+
+    properties は通常 [{"type":"土砂災害危険度","significancyPart":{"locals":[{"code":"21"},...]}}]
+    の形。locals に複数の code が並ぶ場合は数値最大 (= 最も警戒度高) を採用する。
+    取り出せない場合は None。
+    """
+    if not properties:
+        return None
+    candidates: list[str] = []
+    for prop in properties:
+        if not isinstance(prop, dict):
+            continue
+        sp = prop.get("significancyPart") or {}
+        for local in sp.get("locals") or []:
+            if isinstance(local, dict) and local.get("code"):
+                candidates.append(str(local["code"]))
+    if not candidates:
+        return None
+    # 数字化できるものは数値比較、それ以外は無視 (= 最大値を採用)
+    numeric = [c for c in candidates if c.isdigit()]
+    if numeric:
+        return max(numeric, key=lambda c: int(c))
+    return candidates[0]
 
 
 def weather_code_to_text(code: str) -> str:
@@ -266,16 +379,10 @@ def weather_code_to_icon(code: str) -> str:
     return weather_text_to_icon(WEATHER_CODE_MAP.get(code, ""))
 
 
-def fetch_json(url: str, timeout: int = 15) -> object:
-    req = urllib.request.Request(url, headers={"User-Agent": "mulmoclaude-jma-weather/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.load(resp)
-
-
-def fetch_bytes(url: str, timeout: int = 15) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "mulmoclaude-jma-weather/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read()
+# HTTP 取得 + 書き込みは共通モジュール jma_http に集約 (L3 効率化: 条件付きGET + 変更時のみ書込)。
+# fetch_json/fetch_bytes は条件付きGET (304 でキャッシュ本文を返す)、
+# write_record_if_changed は updatedAt 以外が同一なら書かない。
+from jma_http import http_get, fetch_json, fetch_bytes, write_record_if_changed  # noqa: E402
 
 
 def fetch_overview_text(office: str) -> str:
@@ -507,105 +614,76 @@ def fetch_wdist(area_code: str) -> dict[str, list[dict]]:
     return by_date
 
 
-def fetch_amedas_today_stats(amedas_code: str, today_iso: str) -> dict:
-    """AMeDAS 地点コードから現在気温 (currentTemp) と直近 1h/6h/24h 降水量 (mm) を取得する。
+def fetch_amedas_map() -> "tuple[dict, str | None]":
+    """全 AMeDAS 観測所の最新観測を 1 リクエストで取得する。
 
-    today_iso: YYYY-MM-DD (JST)。降水量集計の起点判定に使う。
-    返り値: 取れたフィールドだけを含む dict。失敗時は {}。
+    旧実装は都市ごとに latest_time + point×8 ブロック (= 全11都市で約99 req) を引いていたが、
+    実況ボックスが使うのは現在気温と直近降水量だけなので、全観測所を 1 本で返す
+    map エンドポイントに置き換える (latest_time×1 + map×1 = 2 req)。
 
-    フィールド:
-      - currentTemp: 最新観測時刻の temp[0] (現在気温の観測値)
-      - precip1h / precip6h / precip24h: 最新観測時刻から遡って precipitation10m を合計
-      - precipAsOf: precip* の基準観測時刻 (ISO)
-
-    注: min/max (今日の最低/最高) は AMeDAS では返さない。予報側 (parse_short_term/weekly)
-    の予想値をそのまま使う方が「テレビ天気予報」的体験に合うため (朝から今日の予想最高が見える)。
-
+    返り値: (観測所コード -> 観測 dict, 最新観測時刻 ISO)。失敗時は ({}, None)。
     エンドポイント:
       - 最新観測時刻: https://www.jma.go.jp/bosai/amedas/data/latest_time.txt
-      - 地点観測:    https://www.jma.go.jp/bosai/amedas/data/point/<code>/<YYYYMMDD_HH>.json
-        (3 時間境界ブロック、10 分間隔観測 18 個)
-
-    24h カバーに 8 ブロックを取る (3h × 8)。precipitation10m を 10 分間隔で
-    重複なく合計する (1h=6点 / 6h=36点 / 24h=144点)。
+      - 全観測所一括: https://www.jma.go.jp/bosai/amedas/data/map/<YYYYMMDDHHMMSS>.json
     """
-    result: dict = {}
-
     try:
-        with urllib.request.urlopen(
-            "https://www.jma.go.jp/bosai/amedas/data/latest_time.txt",
-            timeout=10,
-        ) as resp:
-            latest_str = resp.read().decode().strip()
+        # jma_http 経由 (certifi フォールバック付き) で取得。ホストでも SSL 検証が通る。
+        latest_str = http_get("https://www.jma.go.jp/bosai/amedas/data/latest_time.txt", 10).decode().strip()
         latest_dt = datetime.fromisoformat(latest_str)
     except Exception as e:
         print(f"[warn] amedas latest_time fetch failed: {e}", file=sys.stderr)
+        return {}, None
+    stamp = latest_dt.strftime("%Y%m%d%H%M%S")  # JST。map のファイル名と一致
+    try:
+        data = fetch_json(f"https://www.jma.go.jp/bosai/amedas/data/map/{stamp}.json")
+    except Exception as e:
+        print(f"[warn] amedas map fetch failed: {e}", file=sys.stderr)
+        return {}, None
+    if not isinstance(data, dict):
+        return {}, None
+    return data, latest_dt.isoformat()
+
+
+def amedas_stats_from_map(amedas_map: dict, latest_iso: "str | None", amedas_code: str) -> dict:
+    """map スナップショットから 1 地点の現在気温と直近降水量 (1h/3h/24h, mm) を取り出す。
+
+    map の各観測所値は [value, qcFlag] 形式。precipitation6h は AMeDAS のネイティブ
+    フィールドに無いため 1h/3h/24h を採用する (6h は旧実装が時系列から合成していた)。
+
+    フィールド: currentTemp / precip1h / precip3h / precip24h / precipAsOf。
+    注: min/max (今日の最低/最高) は AMeDAS では返さない。予報側の予想値を使う。
+    """
+    result: dict = {}
+    if not amedas_map or not amedas_code:
+        return result
+    point = amedas_map.get(amedas_code)
+    if not isinstance(point, dict):
         return result
 
-    # latest_dt を含むブロック開始 + 過去 7 ブロック = 24h カバー
-    aligned = latest_dt.replace(minute=0, second=0, microsecond=0).replace(
-        hour=(latest_dt.hour // 3) * 3
-    )
-    block_starts = [aligned - timedelta(hours=3 * i) for i in range(8)]
+    def val(key):
+        v = point.get(key)
+        if isinstance(v, list) and v and v[0] is not None:
+            return v[0]
+        return None
 
-    blocks: dict[str, dict] = {}
-    for bs in block_starts:
-        url = f"https://www.jma.go.jp/bosai/amedas/data/point/{amedas_code}/{bs.strftime('%Y%m%d_%H')}.json"
+    t = val("temp")
+    if t is not None:
         try:
-            data = fetch_json(url)
-            if isinstance(data, dict):
-                blocks.update(data)
-        except Exception:
-            # 一部ブロック取得失敗は許容 (前日跨ぎでファイル無いケースあり)
-            continue
-
-    if not blocks:
-        print(f"[warn] amedas no blocks for {amedas_code}", file=sys.stderr)
-        return result
-
-    sorted_times = sorted(blocks.keys())
-
-    # currentTemp: 最新観測時刻の temp[0] (現在気温の観測値)
-    latest_obs_str = sorted_times[-1]
-    latest_obs_dt = datetime.strptime(latest_obs_str, "%Y%m%d%H%M%S").replace(tzinfo=JST)
-    cur_t = blocks[latest_obs_str].get("temp")
-    if isinstance(cur_t, list) and len(cur_t) >= 1 and cur_t[0] is not None:
-        try:
-            v = float(cur_t[0])
-            result["currentTemp"] = str(int(v)) if v.is_integer() else f"{v:.1f}"
+            f = float(t)
+            result["currentTemp"] = str(int(f)) if f.is_integer() else f"{f:.1f}"
         except (ValueError, TypeError):
             pass
-
-    # 降水量 1h/6h/24h: precipitation10m を 10 分間隔で集計
-
-    def sum_p10(count: int) -> float | None:
-        total = 0.0
-        any_value = False
-        for i in range(count):
-            t = latest_obs_dt - timedelta(minutes=10 * i)
-            key = t.strftime("%Y%m%d%H%M%S")
-            if key not in blocks:
-                continue
-            p = blocks[key].get("precipitation10m")
-            if isinstance(p, list) and len(p) >= 1 and p[0] is not None:
-                try:
-                    total += float(p[0])
-                    any_value = True
-                except (ValueError, TypeError):
-                    pass
-        return total if any_value else None
-
-    p1 = sum_p10(6)
-    p6 = sum_p10(36)
-    p24 = sum_p10(144)
-    if p1 is not None:
-        result["precip1h"] = f"{p1:.1f}"
-    if p6 is not None:
-        result["precip6h"] = f"{p6:.1f}"
-    if p24 is not None:
-        result["precip24h"] = f"{p24:.1f}"
-    result["precipAsOf"] = latest_obs_dt.isoformat()
-
+    for field, key in (("precip1h", "precipitation1h"),
+                       ("precip3h", "precipitation3h"),
+                       ("precip24h", "precipitation24h")):
+        p = val(key)
+        if p is not None:
+            try:
+                result[field] = f"{float(p):.1f}"
+            except (ValueError, TypeError):
+                pass
+    if latest_iso:
+        result["precipAsOf"] = latest_iso
     return result
 
 
@@ -647,13 +725,16 @@ def demote_past_today_records(out_dir: Path, office: str, today_iso: str, now_is
         rec["source"] = "past"
         rec["dayLabel"] = day_label(rec_date, today_iso)
         rec["updatedAt"] = now_iso
-        fp.write_text(json.dumps(rec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        write_record_if_changed(fp, rec)
         rewritten += 1
     return rewritten
 
 
-def fetch_city(city: dict, out_dir: Path, now_iso: str) -> tuple[int, str | None, str]:
+def fetch_city(city: dict, out_dir: Path, now_iso: str,
+               amedas_map: dict | None = None, amedas_iso: str | None = None) -> tuple[int, str | None, str]:
     """1 都市分を取得して書き出す。
+
+    amedas_map / amedas_iso: 全観測所の最新観測 (fetch_amedas_map の結果) を都市間で使い回す。
 
     Returns: (written_count, today_iso, today_summary)
     """
@@ -683,11 +764,11 @@ def fetch_city(city: dict, out_dir: Path, now_iso: str) -> tuple[int, str | None
     # (ビューが複数の today レコードから古い空欄版を拾うのを防ぐ)
     demote_past_today_records(out_dir, city["office"], today_iso, now_iso)
 
-    # 今日の AMeDAS 観測値 (min/max/precip1h/6h/24h/precipAsOf) を 1 回だけ取って使い回す
+    # 今日の AMeDAS 観測値 (currentTemp/precip1h/3h/24h/precipAsOf) を map スナップショットから抽出
     # AMeDAS の point id は気象官署コード (temp_code) と別体系なので amedas_code を使う
     amedas_today: dict = {}
     if city.get("amedas_code"):
-        amedas_today = fetch_amedas_today_stats(city["amedas_code"], today_iso)
+        amedas_today = amedas_stats_from_map(amedas_map or {}, amedas_iso, city["amedas_code"])
 
     today_summary = ""
     for d in sorted(merged.keys()):
@@ -745,16 +826,16 @@ def fetch_city(city: dict, out_dir: Path, now_iso: str) -> tuple[int, str | None
         }
         # today レコードのみ AMeDAS 観測値を埋め込み
         # - currentTemp: 最新観測時刻の気温 (現在気温の観測値)
-        # - precip1h/6h/24h: 観測値の累積降水量。明日以降は仕様上空欄
+        # - precip1h/3h/24h: map スナップショットの累積降水量。明日以降は仕様上空欄
         # - min/max は AMeDAS から取らない: 予報値を見せる方が「今日これから何度になるか」が
         #   分かって実用的 (テレビ天気予報的)
         if d == today_iso and amedas_today:
-            for k in ("currentTemp", "precip1h", "precip6h", "precip24h", "precipAsOf"):
+            for k in ("currentTemp", "precip1h", "precip3h", "precip24h", "precipAsOf"):
                 v = amedas_today.get(k)
                 if v not in (None, ""):
                     rec[k] = v
         rec["summary"] = build_summary(rec)
-        out_path.write_text(json.dumps(rec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        write_record_if_changed(out_path, rec)
         if d == today_iso:
             today_summary = rec["summary"]
 
@@ -1297,7 +1378,7 @@ def fetch_typhoons(out_dir: Path, now_iso: str) -> tuple[int, int, int]:
         active_event_ids.add(event_id)
         path = out_dir / f"{rec['id']}.json"
         try:
-            path.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+            write_record_if_changed(path, rec, newline=False)
             written += 1
             fc_note = ""
             if forecast and forecast["url"] != observation["url"]:
@@ -1335,7 +1416,7 @@ def fetch_typhoons(out_dir: Path, now_iso: str) -> tuple[int, int, int]:
             cur["archived"] = True
             cur["updatedAt"] = now_iso
             try:
-                f.write_text(json.dumps(cur, ensure_ascii=False, indent=2), encoding="utf-8")
+                write_record_if_changed(f, cur, newline=False)
                 archived += 1
                 print(f"[typhoon] archived {f.stem} (no fresh observation in active window)", file=sys.stderr)
             except OSError as e:
@@ -1438,15 +1519,16 @@ def fetch_warnings(out_dir: Path, now_iso: str) -> tuple[int, int]:
                                 "status": status,
                                 "reportDatetime": rt,
                                 "additions": k.get("additions") or [],
+                                "properties": k.get("properties") or [],
                                 "areaCode": area_code,
                             }
 
-        # アクティブ判定 — resolve_warning で code+status から (name, level, status_label) を取る。
-        # 空文字 name のものは INACTIVE (解除等) のサイン。
+        # アクティブ判定 — resolve_warning で code+status+properties から
+        # (name, level, status_label) を取る。空文字 name のものは INACTIVE (解除等) のサイン。
         active: list[dict] = []
         for code, st in code_state.items():
             status = st["status"]
-            name, level, status_label = resolve_warning(code, status)
+            name, level, status_label = resolve_warning(code, status, st.get("properties"))
             if not name:
                 continue
             item = {
@@ -1477,12 +1559,13 @@ def fetch_warnings(out_dir: Path, now_iso: str) -> tuple[int, int]:
             "warnings": active,
             "updatedAt": now_iso,
         }
-        # ソート: special → warning → advisory、各レベル内はコード昇順
-        level_order = {"special": 0, "warning": 1, "advisory": 2}
+        # ソート: special → danger → warning → advisory、各レベル内はコード昇順
+        # (2026-05-29 改革で "danger" = レベル4危険警報 階層が新設された)
+        level_order = {"special": 0, "danger": 1, "warning": 2, "advisory": 3}
         rec["warnings"].sort(key=lambda w: (level_order.get(w["level"], 9), w["code"]))
 
         try:
-            out_path.write_text(json.dumps(rec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            write_record_if_changed(out_path, rec)
             written += 1
         except OSError as e:
             print(f"[warning] {office} write failed: {e}", file=sys.stderr)
@@ -1502,6 +1585,11 @@ def main():
     out_dir = Path(args.out_dir) if Path(args.out_dir).is_absolute() else workspace / args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # ユーザー設定 (ロスター・既定都市) を config.json から読み、グローバルを上書きする。
+    # fetch_warnings() 等が module global CITIES_CONFIG を参照するため global で差し替える。
+    global CITIES_CONFIG, DEFAULT_CITY_OFFICE
+    CITIES_CONFIG, DEFAULT_CITY_OFFICE = load_cities_config(out_dir)
+
     targets = CITIES_CONFIG
     if args.only:
         targets = [c for c in CITIES_CONFIG if c["office"] == args.only]
@@ -1510,11 +1598,13 @@ def main():
             return 1
 
     now_iso = datetime.now(JST).isoformat()
+    # 全観測所の最新観測を 1 回だけ取得し、全都市で使い回す (旧: 都市ごと約9 req → 計2 req)
+    amedas_map, amedas_iso = fetch_amedas_map()
     total_records = 0
     success_count = 0
     default_summary = ""
     for i, city in enumerate(targets):
-        n, today, summary = fetch_city(city, out_dir, now_iso)
+        n, today, summary = fetch_city(city, out_dir, now_iso, amedas_map, amedas_iso)
         total_records += n
         if n > 0:
             success_count += 1

@@ -114,7 +114,15 @@
         letter-spacing: 0.02em;
         white-space: nowrap;
       }
+      /* 警戒レベル相当の色: 5=黒紫 / 4=紫 / 3=赤 / 2=黄 (内閣府ガイドラインに準拠)
+         2026-05-29 改革で "danger" = レベル4危険警報 階層が新設された。 */
       .warn-pill.level-special {
+        background: linear-gradient(135deg, #1a0020, #4a0a5e);
+        color: #fff;
+        border: 1px solid #6b0f8a;
+        box-shadow: 0 0 0 2px rgba(107, 15, 138, 0.30);
+      }
+      .warn-pill.level-danger {
         background: linear-gradient(135deg, #8a1ea3, #5a1370);
         color: #fff;
         border: 1px solid #c75ee3;
@@ -141,12 +149,17 @@
         font-size: 10px;
         color: var(--text-faint);
       }
-      /* 特別警報があるときは赤紫の縁取りで視認性を上げる */
+      /* 特別警報があるときは黒紫の縁取りで最高度の視認性 */
       .warning-bar.has-special {
+        border-color: #6b0f8a;
+        background: linear-gradient(180deg, rgba(26, 0, 32, 0.40), var(--card-strong));
+      }
+      /* 危険警報 (レベル4) — 特別警報が無いときに紫の縁取り */
+      .warning-bar.has-danger:not(.has-special) {
         border-color: #c75ee3;
         background: linear-gradient(180deg, rgba(138, 30, 163, 0.18), var(--card-strong));
       }
-      .warning-bar.has-warning:not(.has-special) {
+      .warning-bar.has-warning:not(.has-special):not(.has-danger) {
         border-color: #ff5d50;
       }
 
@@ -175,15 +188,26 @@
       .meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; color: var(--text-dim); margin-top: 12px; }
       .meta dt { color: var(--text-faint); }
       .meta dd { margin: 0; color: var(--text); }
-      .pops-bar { display: flex; gap: 5px; margin-top: 6px; }
-      .pops-bar .band { flex: 1; text-align: center; background: rgba(255, 255, 255, 0.05); padding: 5px 4px; border-radius: 5px; font-size: 11px; }
+      /* 実況 (AMeDAS): 現在気温 + 直近降水量。警報バーの下・hero の上に全幅で表示。
+         予報値と区別するため淡い帯で囲う。 */
+      .hero > .now-obs { grid-column: 1 / -1; }
+      .now-obs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; margin-bottom: 14px; padding: 8px 12px; background: rgba(120, 180, 255, 0.07); border-radius: 8px; font-size: 13px; }
+      .now-obs .now-head { color: var(--text-faint); font-size: 11px; font-weight: 600; }
+      .now-obs .now-item { color: var(--text); }
+      .now-obs .now-lab { color: var(--text-faint); font-size: 11px; margin-right: 2px; }
+      .now-obs .now-rain { color: var(--cool); }
+      .now-obs .now-rain .rk { color: var(--text-faint); font-size: 10px; margin-left: 4px; }
+      /* 6 時間ごと降水確率バー。3 時間ストリップと同じ列グリッドを共有し、
+         各バンドが 2 列 (= 3h セル 2 つ分) を span することで真上に揃える。 */
+      .pops-bar { display: grid; grid-template-columns: repeat(var(--cols, 8), minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+      .pops-bar .band { grid-column: span 2; min-width: 0; text-align: center; background: rgba(255, 255, 255, 0.05); padding: 5px 4px; border-radius: 5px; font-size: 11px; }
       .pops-bar .band .band-label { color: var(--text-faint); font-size: 10px; }
       .pops-bar .band .band-val { font-size: 14px; font-weight: 600; color: var(--cool); }
-      /* 3 時間ごと時系列ストリップ (地域時系列予報) */
-      .hourly-strip { display: flex; gap: 4px; margin-top: 8px; overflow-x: auto; min-width: 0; }
+      /* 3 時間ごと時系列ストリップ (地域時系列予報)。pops-bar と同じ var(--cols) グリッドで
+         幅に依らず常に整列。overflow-scroll はやめ、狭い画面ではセルが縮んで収まる。 */
+      .hourly-strip { display: grid; grid-template-columns: repeat(var(--cols, 8), minmax(0, 1fr)); gap: 4px; margin-top: 8px; min-width: 0; }
       .hourly-strip .h-cell {
-        flex: 1 0 50px;
-        min-width: 50px;
+        min-width: 0;
         text-align: center;
         background: rgba(255, 255, 255, 0.04);
         border-radius: 6px;
@@ -1036,7 +1060,10 @@
       // placement: 被り回避のためのカードオフセット方向
       //   center / N / S / E / W / NE / NW / SE / SW
       //   (CSS で translate を方向別に分岐する。約 70px ずらす)
-      const CITY_ORDER = [
+      // 組込みロスター (フォールバック)。実行時に _config レコード (source:"config") があれば
+      // applyConfig() で CITY_ORDER / NATIONAL_CITIES / DEFAULT_CITY を上書きする。
+      // → ユーザー設定 (どの都市・既定都市) を共有ソースから隔離する。
+      let CITY_ORDER = [
         { office: "016000", name: "札幌",   region: "北海道",   pref: "hokkaido",  xPct: 0.18, yPct: 0.70, placement: "center" },
         { office: "040000", name: "仙台",   region: "宮城県",   pref: "miyagi",    xPct: 0.45, yPct: 0.50, placement: "E" },
         { office: "150000", name: "新潟",   region: "新潟県",   pref: "niigata",   xPct: 0.50, yPct: 0.30, placement: "N" },
@@ -1049,11 +1076,30 @@
         { office: "400000", name: "福岡",   region: "福岡県",   pref: "fukuoka",   xPct: 0.40, yPct: 0.30, placement: "center" },
         { office: "471000", name: "那覇",   region: "沖縄本島", pref: "okinawa",   xPct: 0.88, yPct: 0.40, placement: "center" },
       ];
-      const NATIONAL_CITIES = CITY_ORDER.filter((c) => !c.excludeFromNational);
-      const DEFAULT_CITY = "140000";
+      let NATIONAL_CITIES = CITY_ORDER.filter((c) => !c.excludeFromNational);
+      let DEFAULT_CITY = "140000";
 
       let items = [];
       let selectedOffice = DEFAULT_CITY;
+      let configApplied = false;
+
+      // _config レコード (source:"config") があれば都市ロスター/既定都市を上書きする。
+      // ビューの唯一のデータ入力は items エンドポイントなので、設定もレコードとして受け取る。
+      function applyConfig(recs) {
+        const cfg = (recs || []).find((it) => it && it.source === "config");
+        if (!cfg) return;
+        if (Array.isArray(cfg.cities) && cfg.cities.length) {
+          CITY_ORDER = cfg.cities.map((c) => Object.assign(
+            { office: c.office, name: c.name, region: c.region }, c.map || {}));
+          NATIONAL_CITIES = CITY_ORDER.filter(
+            (c) => !c.excludeFromNational && c.xPct != null && c.yPct != null);
+        }
+        if (cfg.defaultCity) DEFAULT_CITY = cfg.defaultCity;
+        if (!configApplied) {
+          selectedOffice = DEFAULT_CITY; // 初回のみ既定都市を選択 (以後はユーザー操作を尊重)
+          configApplied = true;
+        }
+      }
       let mode = "city";
       let nationalDay = "today";
       let nationalLayout = "map";
@@ -1075,6 +1121,7 @@
         "office", "source", "date", "weekday", "summary",
         "weather", "weatherIcon", "min", "max", "pop", "popsByBand",
         "hourly",
+        "currentTemp", "precip1h", "precip3h", "precip24h", "precipAsOf",
         "wind", "wave", "overviewText", "archived",
         "chartType", "chartLabel", "validDateTime", "pngUrl",
         "areaCode", "areaName", "officeLabel", "publishingOffice", "reportDatetime",
@@ -1083,6 +1130,7 @@
         "forecastSerial", "forecastPoints",
         "warnings", "headlineText",
         "updatedAt",
+        "defaultCity", "cities",
       ];
 
       async function load() {
@@ -1094,6 +1142,7 @@
           const json = await res.json();
           items = json.items || [];
           clearErr();
+          applyConfig(items);
           buildCityPicker();
           renderUpdated();
           highlightPrefectures();
@@ -1693,6 +1742,7 @@
           metaHtml;
         el.style.display = "";
         el.classList.toggle("has-special", active.some((w) => w.level === "special"));
+        el.classList.toggle("has-danger",  active.some((w) => w.level === "danger"));
         el.classList.toggle("has-warning", active.some((w) => w.level === "warning"));
       }
 
@@ -1706,6 +1756,7 @@
         renderWarningBar(warningRec);
 
         $("#hero").innerHTML = "";
+        $("#hero").innerHTML += renderNowObs(today);
         if (today) $("#hero").innerHTML += renderHero(today, "今日");
         if (tomorrow) $("#hero").innerHTML += renderHero(tomorrow, "明日");
         if (!today && !tomorrow) {
@@ -1775,9 +1826,12 @@
         const min = r.min || "—";
         const pop = r.pop || "—";
         const bands = (r.popsByBand || "").split(" / ").filter(Boolean);
+        const hourlyCount = (Array.isArray(r.hourly) && r.hourly.length) ? r.hourly.length : 0;
+        // 両行で共有する列数。3h セル数を基準にし、なければバンド数×2 (各バンド=2列)。
+        const cols = hourlyCount || bands.length * 2 || 8;
         let bandsHtml = "";
         if (bands.length) {
-          bandsHtml = '<div class="pops-bar">' + bands.map((b) => {
+          bandsHtml = '<div class="pops-bar" style="--cols:' + cols + '">' + bands.map((b) => {
             const m = b.match(/^(\d{2}-\d{2}):\s*(\d+)%$/);
             if (!m) return "";
             return '<div class="band"><div class="band-label">' + m[1] + '</div><div class="band-val">' + m[2] + '%</div></div>';
@@ -1786,7 +1840,7 @@
         // 3 時間ごとストリップ (地域時系列予報)
         let hourlyHtml = "";
         if (Array.isArray(r.hourly) && r.hourly.length) {
-          hourlyHtml = '<div class="hourly-strip">' + r.hourly.map((h) =>
+          hourlyHtml = '<div class="hourly-strip" style="--cols:' + cols + '">' + r.hourly.map((h) =>
             '<div class="h-cell">' +
               '<div class="h-time">' + escapeHtml(h.time || "") + '</div>' +
               '<div class="h-icon">' + (h.weatherIcon || "—") + '</div>' +
@@ -1807,11 +1861,33 @@
             '<dl class="meta">' +
               '<dt>降水確率</dt><dd>' + escapeHtml(pop) + '%</dd>' +
               (r.wind ? '<dt>風</dt><dd>' + escapeHtml(r.wind) + '</dd>' : "") +
-              (r.wave ? '<dt>波</dt><dd>' + escapeHtml(r.wave) + '</dd>' : "") +
             '</dl>' +
             hourlyHtml +
             bandsHtml +
           '</div>';
+      }
+
+      // 実況 (AMeDAS): 現在気温 + 直近降水量。警報バーの下・hero の上に全幅で出す。
+      // today レコードにのみ AMeDAS 値が入る。
+      function renderNowObs(r) {
+        if (!r) return "";
+        const has = [r.currentTemp, r.precip1h, r.precip3h, r.precip24h]
+          .some((v) => v !== undefined && v !== null && v !== "");
+        if (!has) return "";
+        const asOf = (r.precipAsOf || "").slice(11, 16); // "HH:MM"
+        const pv = (v) => (v === undefined || v === null || v === "") ? "—" : escapeHtml(v);
+        const tempItem = (r.currentTemp !== undefined && r.currentTemp !== null && r.currentTemp !== "")
+          ? '<span class="now-item"><span class="now-lab">気温</span> ' + escapeHtml(r.currentTemp) + '℃</span>'
+          : "";
+        const rainItem = '<span class="now-item now-rain"><span class="now-lab">降水量</span> '
+          + '<span class="rk">1h</span> ' + pv(r.precip1h) + ' '
+          + '<span class="rk">3h</span> ' + pv(r.precip3h) + ' '
+          + '<span class="rk">24h</span> ' + pv(r.precip24h) + ' mm'
+          + '</span>';
+        return '<div class="now-obs">'
+          + '<span class="now-head">実況' + (asOf ? " " + asOf : "") + '</span>'
+          + tempItem + rainItem
+          + '</div>';
       }
 
       function renderWeekDay(r) {

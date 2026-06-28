@@ -49,7 +49,8 @@
         "typhoon",
         "chart",
         "marine",
-        "warning"
+        "warning",
+        "config"
       ]
     },
     "headlineText": {
@@ -71,7 +72,7 @@
         "level": {
           "type": "enum",
           "label": "レベル",
-          "values": ["special", "warning", "advisory"]
+          "values": ["special", "danger", "warning", "advisory"]
         },
         "status": {
           "type": "string",
@@ -119,9 +120,9 @@
       "type": "string",
       "label": "直近1h降水量 (mm)"
     },
-    "precip6h": {
+    "precip3h": {
       "type": "string",
-      "label": "直近6h降水量 (mm)"
+      "label": "直近3h降水量 (mm)"
     },
     "precip24h": {
       "type": "string",
@@ -335,5 +336,11 @@
         "read"
       ]
     }
-  ]
+  ],
+  "ingest": {
+    "kind": "agent",
+    "schedule": "hourly",
+    "role": "general",
+    "template": "templates/refresh.md"
+  }
 }
