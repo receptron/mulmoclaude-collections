@@ -12,12 +12,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Need history back to the base commit so the `git diff` below can
+          # see what this PR actually touched. `fetch-depth: 0` is the
+          # simplest safe choice; the repo is tiny so the extra clone time
+          # is invisible. (`fetch-depth: 2` would suffice for many PRs but
+          # breaks on multi-commit PRs whose base falls outside the window.)
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      # R9: enforce that meta.author equals the PR author (and the path).
-      - name: Validate collections (identity-gated)
-        run: node scripts/validate.mjs --pr-author "${{ github.event.pull_request.user.login }}"
+      # R9 (`meta.author == PR author`) only makes sense for collections
+      # this PR adds or modifies. Compute that scope from the diff and
+      # hand validate.mjs the list of touched collection paths so it can
+      # apply R9 only to those. A previous version of this workflow
+      # passed `--pr-author` alone, which scoped R9 to every collection
+      # in the registry — a fresh contributor's PR would fail R9 on
+      # every existing collection owned by anyone else.
+      - name: Compute changed collection paths
+        run: |
+          git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" -- 'collections/**' \
+            | awk -F/ 'NF>=3 {print "collections/" $2 "/" $3}' \
+            | sort -u \
+            | tee changed-collections.txt
+      - name: Validate collections (identity-gated to PR scope)
+        run: node scripts/validate.mjs --pr-author "${{ github.event.pull_request.user.login }}" --changed-from changed-collections.txt
       # index.json must be regenerated and committed when a collection changes.
       - name: Check index.json is up to date
         run: node scripts/build-index.mjs --check
