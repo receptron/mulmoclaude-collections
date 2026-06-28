@@ -1,0 +1,10 @@
+{
+  "author": "michiof",
+  "slug": "jma-weather",
+  "version": "1.0.0",
+  "title": "気象庁 天気予報",
+  "description": "気象庁の公開 API から天気予報・警報注意報・台風・地上天気図・地方海上予報を取り込んで1つに統合する schema-driven collection。テレビニュース風のカスタムビュー「天気予報」で 5 モード（指定地域 / 全国地図 / 台風 / 天気図 / 海上）を切替できる。",
+  "tags": ["weather", "jma", "japan", "marine", "typhoon"],
+  "license": "MIT",
+  "dataConsent": true
+}

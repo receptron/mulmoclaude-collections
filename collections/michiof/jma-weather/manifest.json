@@ -1,0 +1,17 @@
+{
+  "files": [
+    "SKILL.md",
+    "meta.json",
+    "schema.json",
+    "scripts/fetch.py",
+    "scripts/fetch_chart.py",
+    "scripts/fetch_marine.py",
+    "seed/items/140000-2026-07-01.json",
+    "seed/items/140000-2026-07-02.json",
+    "seed/items/140000-2026-07-04.json",
+    "seed/items/140000-warning.json",
+    "seed/items/marine-4010.json",
+    "views/japan-map.svg",
+    "views/news-weather.html"
+  ]
+}
