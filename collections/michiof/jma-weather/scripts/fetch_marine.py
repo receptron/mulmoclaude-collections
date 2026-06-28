@@ -114,10 +114,8 @@ def parse_primary_direction(lines: list[str]) -> str | None:
 # Fetch
 # ──────────────────────────────────────────────────────────
 
-def fetch_json(url: str, timeout: int = 20) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8"))
+# HTTP 取得 + 書き込みは共通モジュール jma_http に集約 (L3 効率化: 条件付きGET + 変更時のみ書込)
+from jma_http import fetch_json, write_record_if_changed  # noqa: E402
 
 
 def build_records(office: str, office_label: str, src: dict, label_pos: dict, geoms: dict, now_iso: str) -> list[dict]:
@@ -187,8 +185,7 @@ def build_records(office: str, office_label: str, src: dict, label_pos: dict, ge
 def write_record(out_dir: Path, rec: dict) -> Path:
     p = out_dir / f"{rec['id']}.json"
     p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("w", encoding="utf-8") as f:
-        json.dump(rec, f, ensure_ascii=False, indent=2)
+    write_record_if_changed(p, rec, newline=False)
     return p
 
 

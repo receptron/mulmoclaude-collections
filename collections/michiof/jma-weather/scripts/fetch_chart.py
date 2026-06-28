@@ -42,10 +42,8 @@ TARGETS = [
 ]
 
 
-def _fetch_bytes(url: str, timeout: int = 30) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "mulmoclaude-jma-chart/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read()
+# HTTP 取得 + 書き込みは共通モジュール jma_http に集約 (L3 効率化: 条件付きGET + 変更時のみ書込)
+from jma_http import fetch_bytes as _fetch_bytes, write_record_if_changed  # noqa: E402
 
 
 def _parse_filename(filename: str) -> dict | None:
@@ -159,7 +157,7 @@ def archive_obsolete_charts(items_dir: Path, current_ids: set[str]) -> int:
             continue
         cur["archived"] = True
         try:
-            f.write_text(json.dumps(cur, ensure_ascii=False, indent=2), encoding="utf-8")
+            write_record_if_changed(f, cur, newline=False)
             archived += 1
         except OSError:
             pass
@@ -228,7 +226,7 @@ def fetch_weather_charts(out_dir: Path, now_iso: str) -> tuple[int, int, int, in
 
         path = out_dir / f"{rec['id']}.json"
         try:
-            path.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+            write_record_if_changed(path, rec, newline=False)
             written_ids.add(rec["id"])
             success += 1
             print(f"[chart] wrote {rec['id']} ({rec['summary']})", file=sys.stderr)

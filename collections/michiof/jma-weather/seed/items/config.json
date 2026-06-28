@@ -1,0 +1,251 @@
+{
+  "id": "config",
+  "source": "config",
+  "defaultCity": "140000",
+  "cities": [
+    {
+      "office": "016000",
+      "name": "札幌",
+      "region": "北海道",
+      "order": 1,
+      "codes": {
+        "area": "016010",
+        "temp": "47412",
+        "amedas": "14163",
+        "warning": [
+          "0110000"
+        ]
+      },
+      "map": {
+        "pref": "hokkaido",
+        "xPct": 0.18,
+        "yPct": 0.7,
+        "placement": "center"
+      }
+    },
+    {
+      "office": "040000",
+      "name": "仙台",
+      "region": "宮城県",
+      "order": 2,
+      "codes": {
+        "area": "040010",
+        "temp": "47590",
+        "amedas": "34392",
+        "warning": [
+          "0410001",
+          "0410002"
+        ]
+      },
+      "map": {
+        "pref": "miyagi",
+        "xPct": 0.45,
+        "yPct": 0.5,
+        "placement": "E"
+      }
+    },
+    {
+      "office": "150000",
+      "name": "新潟",
+      "region": "新潟県",
+      "order": 3,
+      "codes": {
+        "area": "150010",
+        "temp": "47604",
+        "amedas": "54232",
+        "warning": [
+          "1510000"
+        ]
+      },
+      "map": {
+        "pref": "niigata",
+        "xPct": 0.5,
+        "yPct": 0.3,
+        "placement": "N"
+      }
+    },
+    {
+      "office": "130000",
+      "name": "東京",
+      "region": "東京都",
+      "order": 4,
+      "codes": {
+        "area": "130010",
+        "temp": "44132",
+        "amedas": "44132",
+        "warning": [
+          "1310100",
+          "1310200",
+          "1310300",
+          "1310400",
+          "1310500",
+          "1310600",
+          "1310700",
+          "1310800",
+          "1310900",
+          "1311000",
+          "1311100",
+          "1311200",
+          "1311300",
+          "1311400",
+          "1311500",
+          "1311600",
+          "1311700",
+          "1311800",
+          "1311900",
+          "1312000",
+          "1312100",
+          "1312200",
+          "1312300"
+        ]
+      },
+      "map": {
+        "pref": "tokyo",
+        "xPct": 0.45,
+        "yPct": 0.09,
+        "placement": "E"
+      }
+    },
+    {
+      "office": "140000",
+      "name": "横浜",
+      "region": "神奈川県",
+      "order": 5,
+      "codes": {
+        "area": "140010",
+        "temp": "46106",
+        "amedas": "46106",
+        "warning": [
+          "1410011",
+          "1410012"
+        ]
+      },
+      "map": {
+        "pref": "kanagawa",
+        "xPct": 0.65,
+        "yPct": 0.4,
+        "placement": "center"
+      }
+    },
+    {
+      "office": "230000",
+      "name": "名古屋",
+      "region": "愛知県",
+      "order": 6,
+      "codes": {
+        "area": "230010",
+        "temp": "47636",
+        "amedas": "51106",
+        "warning": [
+          "2310000"
+        ]
+      },
+      "map": {
+        "pref": "aichi",
+        "xPct": 0.45,
+        "yPct": 0.2,
+        "placement": "S"
+      }
+    },
+    {
+      "office": "270000",
+      "name": "大阪",
+      "region": "大阪府",
+      "order": 7,
+      "codes": {
+        "area": "270000",
+        "temp": "47772",
+        "amedas": "62078",
+        "warning": [
+          "2710000"
+        ]
+      },
+      "map": {
+        "pref": "osaka",
+        "xPct": 0.55,
+        "yPct": 0.45,
+        "placement": "N"
+      }
+    },
+    {
+      "office": "320000",
+      "name": "松江",
+      "region": "島根県",
+      "order": 8,
+      "codes": {
+        "area": "320010",
+        "temp": "47741",
+        "amedas": "68132",
+        "warning": [
+          "3220100"
+        ]
+      },
+      "map": {
+        "pref": "shimane",
+        "xPct": 0.8,
+        "yPct": 0.5,
+        "placement": "N"
+      }
+    },
+    {
+      "office": "370000",
+      "name": "高松",
+      "region": "香川県",
+      "order": 9,
+      "codes": {
+        "area": "370000",
+        "temp": "47891",
+        "amedas": "72086",
+        "warning": [
+          "3720100"
+        ]
+      },
+      "map": {
+        "pref": "kagawa",
+        "xPct": 0.55,
+        "yPct": 0.55,
+        "placement": "S"
+      }
+    },
+    {
+      "office": "400000",
+      "name": "福岡",
+      "region": "福岡県",
+      "order": 10,
+      "codes": {
+        "area": "400010",
+        "temp": "47807",
+        "amedas": "82182",
+        "warning": [
+          "4013000"
+        ]
+      },
+      "map": {
+        "pref": "fukuoka",
+        "xPct": 0.4,
+        "yPct": 0.3,
+        "placement": "center"
+      }
+    },
+    {
+      "office": "471000",
+      "name": "那覇",
+      "region": "沖縄本島",
+      "order": 11,
+      "codes": {
+        "area": "471010",
+        "temp": "47936",
+        "amedas": "91197",
+        "warning": [
+          "4720100"
+        ]
+      },
+      "map": {
+        "pref": "okinawa",
+        "xPct": 0.88,
+        "yPct": 0.4,
+        "placement": "center"
+      }
+    }
+  ]
+}
