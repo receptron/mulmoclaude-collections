@@ -116,7 +116,7 @@
       /* mount color chip (shown in bar + list rows) */
       .mchip { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; border: 1px solid; white-space: nowrap; vertical-align: middle; }
 
-      /* wishlist (欲しい) treatment — not owned, not sold */
+      /* wishlist treatment — not owned, not sold */
       .row.wish, .li.wish { background: rgba(94,234,212,.07); }
       .row.wish:hover, .li.wish:hover { background: rgba(94,234,212,.12); }
       .barwrap.wish .b, .pt.wish { opacity: .5; }
@@ -132,57 +132,108 @@
     <div class="head">
       <div class="logo">📷</div>
       <div>
-        <h1>レンズ図鑑</h1>
-        <p id="sub">読み込み中…</p>
+        <h1 id="h1">レンズ図鑑</h1>
+        <p id="sub">…</p>
       </div>
     </div>
 
-    <div id="stats" class="stats"></div>
-
     <div class="controls">
       <div class="seg" id="mode">
-        <button data-v="bars" class="on">焦点距離バー</button>
-        <button data-v="list">リスト</button>
-        <button data-v="gallery">ギャラリー</button>
+        <button data-v="bars" class="on"></button>
+        <button data-v="list"></button>
+        <button data-v="gallery"></button>
       </div>
       <select id="sort">
-        <option value="focal">焦点距離順</option>
-        <option value="date">購入日順</option>
-        <option value="maker">メーカー順</option>
-        <option value="fstop">開放F値順</option>
-        <option value="name">名前順</option>
+        <option value="focal"></option>
+        <option value="date"></option>
+        <option value="maker"></option>
+        <option value="fstop"></option>
+        <option value="name"></option>
       </select>
       <div class="seg" id="dir">
-        <button data-v="asc" class="on">昇順</button>
-        <button data-v="desc">降順</button>
+        <button data-v="asc" class="on"></button>
+        <button data-v="desc"></button>
       </div>
       <select id="own">
-        <option value="all">状況：すべて</option>
-        <option value="所有中">所有中</option>
-        <option value="欲しい">欲しい</option>
-        <option value="売却済み">売却済み</option>
+        <option value="all"></option>
+        <option value="所有中"></option>
+        <option value="欲しい"></option>
+        <option value="売却済み"></option>
       </select>
-      <select id="fmaker"><option value="all">メーカー：すべて</option></select>
-      <select id="fmount"><option value="all">マウント：すべて</option></select>
-      <select id="fseries"><option value="all">シリーズ：すべて</option></select>
-      <button id="reset" class="reset" type="button">クリア</button>
-      <div class="seg" id="equiv" title="APS-C等を35mm判換算で表示・ソート">
-        <button data-v="off" class="on">実焦点</button>
-        <button data-v="on">35mm換算</button>
+      <select id="fmaker"></select>
+      <select id="fmount"></select>
+      <select id="fseries"></select>
+      <button id="reset" class="reset" type="button"></button>
+      <div class="seg" id="equiv">
+        <button data-v="off" class="on"></button>
+        <button data-v="on"></button>
       </div>
+      <button id="exPng" class="reset" type="button"></button>
+      <button id="exPdf" class="reset" type="button"></button>
+      <button id="langBtn" class="reset" type="button"></button>
       <div class="spacer"></div>
       <div class="legend">
         <span><i class="dot" style="background:var(--rf)"></i>Canon RF</span>
         <span><i class="dot" style="background:var(--ef)"></i>Canon EF/EF-S</span>
         <span><i class="dot" style="background:var(--fx)"></i>Fujifilm X</span>
         <span><i class="dot" style="background:var(--m)"></i>Leica M</span>
-        <span><i class="dot" style="background:var(--etc)"></i>その他</span>
+        <span><i class="dot" style="background:var(--etc)"></i><span id="legendOther">その他</span></span>
       </div>
     </div>
 
-    <div id="root"></div>
+    <div id="capture">
+      <div id="stats" class="stats"></div>
+      <div id="root"></div>
+    </div>
 
     <script>
+      // ---- i18n (no host locale in __MC_VIEW → navigator.language + manual toggle) ----
+      const I18N = {
+        ja: {
+          title: "レンズ図鑑", loading: "読み込み中…", subCount: "全 {n} 本 · クリックで詳細へ",
+          mBars: "焦点距離バー", mList: "リスト", mGallery: "ギャラリー",
+          sFocal: "焦点距離順", sDate: "購入日順", sMaker: "メーカー順", sFstop: "開放F値順", sName: "名前順",
+          asc: "昇順", desc: "降順",
+          ownAll: "状況：すべて", owned: "所有中", wish: "欲しい", sold: "売却済み", soldShort: "売却",
+          makerAll: "メーカー：すべて", mountAll: "マウント：すべて", seriesAll: "シリーズ：すべて",
+          clear: "クリア", actual: "実焦点", eq35: "35mm換算", equivTitle: "APS-C等を35mm判換算で表示・ソート",
+          exImg: "⬇ 画像", exImgT: "表示中の図鑑をPNG画像で保存", exPdf: "⬇ PDF", exPdfT: "表示中の図鑑をPDF（印刷）で保存",
+          other: "その他", noMatch: "該当なし",
+          statShowing: "表示中", statPrimeZoom: "単焦点 / ズーム", range: "最広角〜最望遠", rangeEq: "最広角〜最望遠(換算)",
+          loadFail: "読み込み失敗: ", genLoading: "生成中…", genFail: "生成失敗: ",
+          popupBlocked: "ポップアップがブロックされました。ブラウザでこのサイトのポップアップを許可してください。",
+          repSavePng: "⬇ 画像(PNG)で保存", repPrint: "⬇ PDF / 印刷", repHint: "PDFは印刷ダイアログで「PDFに保存」を選択",
+          imgLibLoading: "画像ライブラリ読込中。数秒後にもう一度押してください",
+          repOrder: "並び", repStatus: "状況", repMaker: "メーカー", repMount: "マウント", repSeries: "シリーズ",
+          rsFocal: "焦点距離", rsDate: "購入日", rsMaker: "メーカー", rsFstop: "F値", rsName: "名前",
+          langBtn: "🌐 EN", dateLocale: "ja-JP",
+        },
+        en: {
+          title: "Lens Library", loading: "Loading…", subCount: "{n} lenses · tap for details",
+          mBars: "Focal bars", mList: "List", mGallery: "Gallery",
+          sFocal: "By focal length", sDate: "By purchase date", sMaker: "By maker", sFstop: "By max aperture", sName: "By name",
+          asc: "Asc", desc: "Desc",
+          ownAll: "Status: All", owned: "Owned", wish: "Wishlist", sold: "Sold", soldShort: "Sold",
+          makerAll: "Maker: All", mountAll: "Mount: All", seriesAll: "Series: All",
+          clear: "Clear", actual: "Actual", eq35: "35mm-eq", equivTitle: "Show & sort in 35mm-equivalent focal length",
+          exImg: "⬇ Image", exImgT: "Save current view as a PNG image", exPdf: "⬇ PDF", exPdfT: "Save current view as PDF (print)",
+          other: "Other", noMatch: "No matches",
+          statShowing: "Showing", statPrimeZoom: "Prime / Zoom", range: "Widest–Longest", rangeEq: "Widest–Longest (eq)",
+          loadFail: "Load failed: ", genLoading: "Generating…", genFail: "Generation failed: ",
+          popupBlocked: "Pop-up blocked. Please allow pop-ups for this site in your browser.",
+          repSavePng: "⬇ Save as image (PNG)", repPrint: "⬇ PDF / Print", repHint: "For PDF, choose “Save as PDF” in the print dialog",
+          imgLibLoading: "Image library is loading. Please try again in a moment.",
+          repOrder: "Sort", repStatus: "Status", repMaker: "Maker", repMount: "Mount", repSeries: "Series",
+          rsFocal: "Focal length", rsDate: "Purchase date", rsMaker: "Maker", rsFstop: "Aperture", rsName: "Name",
+          langBtn: "🌐 日本語", dateLocale: "en-US",
+        },
+      };
+      let LANG = (() => {
+        try { const s = localStorage.getItem("lensZukanLang"); if (s === "ja" || s === "en") return s; } catch (e) {}
+        return String(navigator.language || "").toLowerCase().startsWith("ja") ? "ja" : "en";
+      })();
+      const t = (k) => (I18N[LANG] && I18N[LANG][k] != null ? I18N[LANG][k] : I18N.ja[k] != null ? I18N.ja[k] : k);
+
       const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
       const ORIGIN = new URL(window.__MC_VIEW.dataUrl).origin;
       const imgSrc = (p) => !p ? null : (/^(https?:|data:|blob:)/i.test(p) ? p : ORIGIN + "/" + String(p).replace(/^\/+/, ""));
@@ -196,7 +247,7 @@
         if (mount === "Canon EF" || mount === "Canon EF-S") return { c: "var(--ef)", k: "Canon EF/EF-S" };
         if (mount === "Fujifilm X") return { c: "var(--fx)", k: "Fujifilm X" };
         if (mount === "Leica M") return { c: "var(--m)", k: "Leica M" };
-        return { c: "var(--etc)", k: "その他" };
+        return { c: "var(--etc)", k: t("other") };
       }
       const shortMount = (m) => String(m || "").replace(/^Canon /, "").replace(/^Fujifilm /, "");
       // Lens "series" — first-party Canon/Fuji lines get a clean label from the
@@ -238,9 +289,9 @@
         return (cropped ? "≈" : "") + core;
       }
       function fstopStr(it) {
-        const w = it.fStopWide, t = it.fStopTele;
+        const w = it.fStopWide, t2 = it.fStopTele;
         if (w == null || w === "") return "";
-        return "F" + w + (t != null && t !== "" && Number(t) !== Number(w) ? "-" + t : "");
+        return "F" + w + (t2 != null && t2 !== "" && Number(t2) !== Number(w) ? "-" + t2 : "");
       }
 
       function sortItems(items) {
@@ -282,14 +333,14 @@
       function renderAxis(items) {
         const cand = [8, 10, 14, 16, 20, 24, 28, 35, 50, 70, 100, 135, 200, 300, 400];
         const lo = Math.exp(SCALE.lo), hi = Math.exp(SCALE.hi);
-        const ticks = cand.filter((t) => t >= lo && t <= hi);
-        const grid = ticks.map((t) => '<div class="gridline" style="left:' + pos(t).toFixed(2) + '%"></div>').join("");
-        const lab = ticks.map((t) => '<div class="tick" style="left:' + pos(t).toFixed(2) + '%">' + t + '</div>').join("");
+        const ticks = cand.filter((tk) => tk >= lo && tk <= hi);
+        const grid = ticks.map((tk) => '<div class="gridline" style="left:' + pos(tk).toFixed(2) + '%"></div>').join("");
+        const lab = ticks.map((tk) => '<div class="tick" style="left:' + pos(tk).toFixed(2) + '%">' + tk + '</div>').join("");
         return { axis: '<div class="axis">' + lab + '</div>', grid };
       }
 
       function renderBars(items) {
-        if (!items.length) return '<div class="err">該当なし</div>';
+        if (!items.length) return '<div class="err">' + esc(t("noMatch")) + '</div>';
         setScale(items);
         const { axis, grid } = renderAxis(items);
         const rows = items.map((it) => {
@@ -305,7 +356,7 @@
             bar = '<div class="pt' + (wish ? ' wish' : '') + '" style="left:' + left.toFixed(2) + '%;background:' + ms.c + '"></div>' +
                   '<div class="blabel" style="left:calc(' + left.toFixed(2) + '% + 12px)">' + fmtRange(it) + '</div>';
           }
-          const status = sold ? "売却済み" : wish ? "欲しい" : (it.purchaseDate || "");
+          const status = sold ? t("sold") : wish ? t("wish") : (it.purchaseDate || "");
           const meta = [it.maker, fstopStr(it), status].filter(Boolean).join(" · ");
           return '<div class="row' + (sold ? ' sold' : '') + (wish ? ' wish' : '') + '" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
             '<div class="rlabel"><div class="nm">' + (isL(it) ? '🔴 ' : '') + esc(it.name) + '</div>' +
@@ -322,14 +373,14 @@
         return "linear-gradient(150deg, hsl(" + a + " 42% 28%), hsl(" + ((a + 40) % 360) + " 48% 15%))";
       }
       function renderGallery(items) {
-        if (!items.length) return '<div class="err">該当なし</div>';
+        if (!items.length) return '<div class="err">' + esc(t("noMatch")) + '</div>';
         const cards = items.map((it) => {
           const src = imgSrc(it.photo);
           const sold = isSold(it), wish = isWish(it);
           const img = src ? '<img loading="lazy" src="' + esc(src) + '" alt="" onerror="this.remove()" />' : '';
           const ph = '<div class="ph" style="background:' + gradFor(it.maker) + '"><div class="fl">' + esc(fmtRange(it)) + '</div><div class="fn">' + esc(it.maker) + '</div></div>';
           const ring = isL(it) ? '<div class="ring"></div>' : '';
-          const tag = sold ? '<div class="tag sold">売却済み</div>' : wish ? '<div class="tag wish">欲しい</div>' : (it.focus === "MF" ? '<div class="tag">MF</div>' : '');
+          const tag = sold ? '<div class="tag sold">' + esc(t("sold")) + '</div>' : wish ? '<div class="tag wish">' + esc(t("wish")) + '</div>' : (it.focus === "MF" ? '<div class="tag">MF</div>' : '');
           const meta = [fstopStr(it) ? '<span class="f">' + esc(fstopStr(it)) + '</span>' : '', mountChip(it), it.purchaseDate ? '<span>' + esc(it.purchaseDate) + '</span>' : ''].filter(Boolean).join("");
           return '<div class="card' + (sold ? ' sold' : '') + (wish ? ' wish' : '') + '" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
             '<div class="shot">' + ph + img + ring + tag + '</div>' +
@@ -339,7 +390,7 @@
       }
 
       function renderList(items) {
-        if (!items.length) return '<div class="err">該当なし</div>';
+        if (!items.length) return '<div class="err">' + esc(t("noMatch")) + '</div>';
         const rows = items.map((it) => {
           const src = imgSrc(it.photo);
           const sold = isSold(it), wish = isWish(it);
@@ -351,8 +402,8 @@
             fstopStr(it) ? '<span class="f">' + esc(fstopStr(it)) + '</span>' : '',
             '<span>' + esc(fmtRange(it)) + '</span>',
             it.purchaseDate ? '<span class="pd">' + esc(it.purchaseDate) + '</span>' : '',
-            sold ? '<span class="soldtag">売却</span>' : '',
-            wish ? '<span class="wishtag">欲しい</span>' : '',
+            sold ? '<span class="soldtag">' + esc(t("soldShort")) + '</span>' : '',
+            wish ? '<span class="wishtag">' + esc(t("wish")) + '</span>' : '',
           ].filter(Boolean).join("");
           return '<div class="li' + (sold ? ' sold' : '') + (wish ? ' wish' : '') + '" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
             thumb +
@@ -370,13 +421,13 @@
         const wide = Math.min(...scope.map(emin));
         const tele = Math.max(...scope.map(emax));
         const zooms = items.filter(isZoom).length, primes = items.length - zooms;
-        const rangeLabel = state.equiv ? "最広角〜最望遠(換算)" : "最広角〜最望遠";
+        const rangeLabel = state.equiv ? t("rangeEq") : t("range");
         const cells = [
-          ["表示中", items.length],
-          ["所有中", owned.length],
-          ["欲しい", wish.length],
-          ["売却済み", sold.length],
-          ["単焦点 / ズーム", primes + " / " + zooms],
+          [t("statShowing"), items.length],
+          [t("owned"), owned.length],
+          [t("wish"), wish.length],
+          [t("sold"), sold.length],
+          [t("statPrimeZoom"), primes + " / " + zooms],
           [rangeLabel, (isFinite(wide) ? Math.round(wide) : "—") + "〜" + (isFinite(tele) ? Math.round(tele) : "—") + "mm"],
         ];
         document.getElementById("stats").innerHTML = cells.map(([l, n]) =>
@@ -399,22 +450,110 @@
         });
       }
 
+      // ---- apply translatable labels to the static controls ----
+      function setSegLabels(id, map) {
+        document.querySelectorAll("#" + id + " button").forEach((b) => { if (map[b.dataset.v] != null) b.textContent = map[b.dataset.v]; });
+      }
+      function setOptLabels(id, map) {
+        document.querySelectorAll("#" + id + " option").forEach((o) => { if (map[o.value] != null) o.textContent = map[o.value]; });
+      }
+      function setAllOptLabel(id, label) {
+        const o = document.querySelector("#" + id + ' option[value="all"]'); if (o) o.textContent = label;
+      }
+      function applyStaticI18n() {
+        document.documentElement.lang = LANG;
+        document.getElementById("h1").textContent = t("title");
+        setSegLabels("mode", { bars: t("mBars"), list: t("mList"), gallery: t("mGallery") });
+        setOptLabels("sort", { focal: t("sFocal"), date: t("sDate"), maker: t("sMaker"), fstop: t("sFstop"), name: t("sName") });
+        setSegLabels("dir", { asc: t("asc"), desc: t("desc") });
+        setOptLabels("own", { all: t("ownAll"), "所有中": t("owned"), "欲しい": t("wish"), "売却済み": t("sold") });
+        setAllOptLabel("fmaker", t("makerAll")); setAllOptLabel("fmount", t("mountAll")); setAllOptLabel("fseries", t("seriesAll"));
+        document.getElementById("reset").textContent = t("clear");
+        setSegLabels("equiv", { off: t("actual"), on: t("eq35") });
+        document.getElementById("equiv").title = t("equivTitle");
+        const exPng = document.getElementById("exPng"); exPng.textContent = t("exImg"); exPng.title = t("exImgT");
+        const exPdf = document.getElementById("exPdf"); exPdf.textContent = t("exPdf"); exPdf.title = t("exPdfT");
+        document.getElementById("legendOther").textContent = t("other");
+        document.getElementById("langBtn").textContent = t("langBtn");
+        if (ALL.length) document.getElementById("sub").textContent = t("subCount").replace("{n}", ALL.length);
+        else document.getElementById("sub").textContent = t("loading");
+      }
+
+      // ---- export (PNG / PDF) — opens a self-contained report in a new tab ----
+      async function inlineImages(node) {
+        const imgs = [...node.querySelectorAll("img")];
+        const orig = new Map();
+        await Promise.all(imgs.map(async (img) => {
+          try {
+            const r = await fetch(img.src);
+            const b = await r.blob();
+            const d = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(b); });
+            orig.set(img, img.getAttribute("src")); img.setAttribute("src", d);
+          } catch (e) {}
+        }));
+        return () => orig.forEach((src, img) => { if (src == null) img.removeAttribute("src"); else img.setAttribute("src", src); });
+      }
+      function reportSummary() {
+        const sortLabel = { focal: t("rsFocal"), date: t("rsDate"), maker: t("rsMaker"), fstop: t("rsFstop"), name: t("rsName") }[state.sort] || state.sort;
+        const parts = [state.mode === "bars" ? t("mBars") : state.mode === "list" ? t("mList") : t("mGallery")];
+        if (state.equiv) parts.push(t("eq35"));
+        parts.push(t("repOrder") + ":" + sortLabel + (state.dir === "asc" ? "↑" : "↓"));
+        if (state.own !== "all") parts.push(t("repStatus") + ":" + ({ "所有中": t("owned"), "欲しい": t("wish"), "売却済み": t("sold") }[state.own] || state.own));
+        if (state.maker !== "all") parts.push(t("repMaker") + ":" + state.maker);
+        if (state.mount !== "all") parts.push(t("repMount") + ":" + state.mount);
+        if (state.series !== "all") parts.push(t("repSeries") + ":" + state.series);
+        return parts.join(" / ");
+      }
+      function buildReportDoc(styleTag, headerHtml, contentHtml, kind) {
+        const repCss = "<style>html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;padding:0;background:#0e1116}.repbar{position:sticky;top:0;display:flex;gap:8px;align-items:center;padding:10px 16px;background:#11151c;border-bottom:1px solid #2b313c;z-index:10}.repbar button{background:#1f242d;color:#e8ecf3;border:1px solid #3a4150;border-radius:8px;padding:7px 13px;font-size:13px;cursor:pointer;font-family:inherit}.repbar .sp{flex:1}.repbar .hint{color:#97a1b2;font-size:11px}.rep{padding:18px}.rephead{margin-bottom:14px}.reptitle{font-size:20px;font-weight:700}.repmeta{font-size:12px;color:#97a1b2;margin-top:3px}@media print{.repbar{display:none}.rep{padding:0}}</style>";
+        const bar = '<div class="repbar"><button onclick="savePNG()">' + esc(t("repSavePng")) + '</button><button onclick="window.print()">' + esc(t("repPrint")) + '</button><span class="sp"></span><span class="hint">' + esc(t("repHint")) + '</span></div>';
+        const body = bar + '<div id="rep" class="rep">' + headerHtml + contentHtml + "</div>";
+        const autoPrint = kind === "pdf" ? 'window.addEventListener("load",function(){setTimeout(function(){window.print();},600);});' : "";
+        const autoPng = kind === "png" ? 'window.addEventListener("load",function(){(function w(){window.html2canvas?savePNG():setTimeout(w,150);})();});' : "";
+        const imgLib = JSON.stringify(t("imgLibLoading"));
+        const js = '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>' +
+          '<script>function savePNG(){if(!window.html2canvas){alert(' + imgLib + ');return;}html2canvas(document.getElementById("rep"),{backgroundColor:"#0e1116",scale:2,useCORS:true}).then(function(c){c.toBlob(function(b){var u=URL.createObjectURL(b);var a=document.createElement("a");a.href=u;a.download="lens-zukan.png";document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1500);});});}' + autoPrint + autoPng + "<\/script>";
+        return '<!doctype html><html lang="' + LANG + '"><head><meta charset="utf-8"><title>' + esc(t("title")) + '</title>' + styleTag + repCss + "</head><body>" + body + js + "</body></html>";
+      }
+      async function exportReport(kind) {
+        const win = window.open("", "_blank");
+        if (!win) { alert(t("popupBlocked")); return; }
+        win.document.write('<!doctype html><meta charset="utf-8"><body style="font-family:sans-serif;background:#0e1116;color:#ccc;padding:24px">' + esc(t("genLoading")) + '</body>');
+        try {
+          const cap = document.getElementById("capture");
+          const restore = await inlineImages(cap);
+          const content = cap.innerHTML;
+          restore();
+          const styleTag = document.querySelector("style").outerHTML;
+          const header = '<div class="rephead"><div class="reptitle">' + esc(t("title")) + '</div><div class="repmeta">' + esc(reportSummary()) + " ・ " + esc(new Date().toLocaleString(t("dateLocale"))) + "</div></div>";
+          const docHtml = buildReportDoc(styleTag, header, content, kind);
+          win.document.open(); win.document.write(docHtml); win.document.close();
+        } catch (e) {
+          try { win.document.body.innerHTML = '<div style="color:#fca5a5">' + esc(t("genFail")) + esc(e.message) + "</div>"; } catch (_) {}
+        }
+      }
+
+      const uniqSorted = (vals) => [...new Set(vals.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), "ja"));
+      function fillSelect(id, values) {
+        const sel = document.getElementById(id);
+        const cur = sel.value;
+        sel.innerHTML = '<option value="all"></option>' +
+          values.map((v) => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join("");
+        if (cur) sel.value = cur;
+      }
+
       async function main() {
+        applyStaticI18n();
         const { token, dataUrl } = window.__MC_VIEW;
         const res = await fetch(dataUrl, { headers: { Authorization: "Bearer " + token } });
         if (!res.ok) throw new Error("HTTP " + res.status);
         ALL = (await res.json()).items || [];
-        document.getElementById("sub").textContent = "全 " + ALL.length + " 本 · クリックで詳細へ";
+        document.getElementById("sub").textContent = t("subCount").replace("{n}", ALL.length);
 
-        const uniqSorted = (vals) => [...new Set(vals.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), "ja"));
-        function fillSelect(id, values, allLabel) {
-          const sel = document.getElementById(id);
-          sel.innerHTML = '<option value="all">' + esc(allLabel) + '</option>' +
-            values.map((v) => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join("");
-        }
-        fillSelect("fmaker", uniqSorted(ALL.map((it) => it.maker)), "メーカー：すべて");
-        fillSelect("fmount", uniqSorted(ALL.map((it) => it.mount)), "マウント：すべて");
-        fillSelect("fseries", uniqSorted(ALL.map(series)), "シリーズ：すべて");
+        fillSelect("fmaker", uniqSorted(ALL.map((it) => it.maker)));
+        fillSelect("fmount", uniqSorted(ALL.map((it) => it.mount)));
+        fillSelect("fseries", uniqSorted(ALL.map(series)));
+        applyStaticI18n();
 
         wireSeg("mode", "mode");
         wireSeg("dir", "dir");
@@ -428,10 +567,18 @@
           for (const id of ["own", "fmaker", "fmount", "fseries"]) document.getElementById(id).value = "all";
           render();
         });
+        document.getElementById("exPng").addEventListener("click", () => exportReport("png"));
+        document.getElementById("exPdf").addEventListener("click", () => exportReport("pdf"));
         document.getElementById("equiv").addEventListener("click", (e) => {
           const btn = e.target.closest("button"); if (!btn) return;
           state.equiv = btn.dataset.v === "on";
           [...e.currentTarget.children].forEach((b) => b.classList.toggle("on", b === btn));
+          render();
+        });
+        document.getElementById("langBtn").addEventListener("click", () => {
+          LANG = LANG === "ja" ? "en" : "ja";
+          try { localStorage.setItem("lensZukanLang", LANG); } catch (e) {}
+          applyStaticI18n();
           render();
         });
         const root = document.getElementById("root");
@@ -439,7 +586,8 @@
         root.addEventListener("keydown", (e) => { if (e.key !== "Enter" && e.key !== " ") return; const el = e.target.closest("[data-id]"); if (el) { e.preventDefault(); openItem(el.dataset.id); } });
         render();
       }
-      main().catch((e) => { document.getElementById("root").innerHTML = '<div class="err">読み込み失敗: ' + esc(e.message) + '</div>'; });
+      applyStaticI18n();
+      main().catch((e) => { document.getElementById("root").innerHTML = '<div class="err">' + esc(t("loadFail")) + esc(e.message) + '</div>'; });
     </script>
   </body>
 </html>

@@ -104,7 +104,7 @@
     },
     "ownership": {
       "type": "enum",
-      "label": "所有状況",
+      "label": "所有状況（現在）",
       "values": [
         "欲しい",
         "所有中",
@@ -113,7 +113,42 @@
     },
     "purchaseDate": {
       "type": "date",
-      "label": "購入日（買った時期）"
+      "label": "購入日（初回・図鑑の並び替え用）"
+    },
+    "ownershipPeriods": {
+      "type": "table",
+      "label": "所有期間（出戻り・複数本もOK）",
+      "of": {
+        "from": {
+          "type": "date",
+          "label": "取得日"
+        },
+        "to": {
+          "type": "date",
+          "label": "手放し日（空=所有中）"
+        },
+        "acquirePrice": {
+          "type": "money",
+          "label": "取得額",
+          "currency": "JPY"
+        },
+        "releasePrice": {
+          "type": "money",
+          "label": "売却額",
+          "currency": "JPY"
+        },
+        "note": {
+          "type": "string",
+          "label": "メモ"
+        }
+      }
+    },
+    "netCashflow": {
+      "type": "derived",
+      "label": "通算収支（売却−取得）",
+      "currency": "JPY",
+      "formula": "sum(ownershipPeriods[].releasePrice) - sum(ownershipPeriods[].acquirePrice)",
+      "display": "money"
     },
     "hasStabilizer": {
       "type": "boolean",

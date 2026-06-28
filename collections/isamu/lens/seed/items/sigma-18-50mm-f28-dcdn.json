@@ -9,6 +9,11 @@
   "format": "APS-C",
   "focus": "AF",
   "ownership": "所有中",
+  "purchaseDate": "2021-09-01",
+  "ownershipPeriods": [
+    { "from": "2021-09-01", "to": "2022-12-01", "acquirePrice": 62000, "releasePrice": 48000, "note": "一度手放した" },
+    { "from": "2024-03-15", "acquirePrice": 55000, "note": "やっぱり便利で買い直し（出戻り）" }
+  ],
   "hasStabilizer": false,
   "hasDustMoistureResistance": true,
   "isInternalFocus": false,
