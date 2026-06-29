@@ -1,0 +1,33 @@
+{
+  "title": "読書リスト",
+  "icon": "menu_book",
+  "dataPath": "data/books/items",
+  "primaryKey": "id",
+  "fields": {
+    "id": { "type": "string", "label": "ID", "primary": true, "required": true },
+    "title": { "type": "string", "label": "タイトル", "required": true },
+    "author": { "type": "string", "label": "著者" },
+    "year": { "type": "number", "label": "出版年" },
+    "genre": {
+      "type": "enum",
+      "label": "ジャンル",
+      "values": ["小説", "SF", "ミステリ", "ノンフィクション", "技術書", "ビジネス", "その他"]
+    },
+    "status": {
+      "type": "enum",
+      "label": "ステータス",
+      "values": ["読みたい", "読書中", "読了"]
+    },
+    "done": { "type": "toggle", "label": "読了", "field": "status", "onValue": "読了", "offValue": "読みたい" },
+    "rating": {
+      "type": "enum",
+      "label": "評価（1〜5）",
+      "values": ["1", "2", "3", "4", "5"],
+      "when": { "field": "status", "in": ["読了"] }
+    },
+    "finishedDate": { "type": "date", "label": "読了日", "when": { "field": "status", "in": ["読了"] } },
+    "notes": { "type": "text", "label": "メモ" }
+  },
+  "kanbanField": "status",
+  "displayField": "title"
+}

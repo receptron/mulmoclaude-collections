@@ -1,0 +1,12 @@
+{
+  "files": [
+    "SKILL.md",
+    "meta.json",
+    "schema.json",
+    "seed/items/factfulness.json",
+    "seed/items/nineteen-eighty-four.json",
+    "seed/items/pragmatic-programmer.json",
+    "seed/items/sapiens.json",
+    "seed/items/wagahai-wa-neko-de-aru.json"
+  ]
+}

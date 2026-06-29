@@ -1,0 +1,10 @@
+{
+  "author": "isamu",
+  "slug": "books",
+  "version": "1.0.0",
+  "title": "読書リスト",
+  "description": "読みたい・読書中・読了の本を記録するコレクション。著者/出版年/ジャンル/評価/読了日を管理し、ステータスでカンバン表示、読了トグルで切り替えできる。",
+  "tags": ["reading", "books", "personal"],
+  "license": "MIT",
+  "dataConsent": true
+}
