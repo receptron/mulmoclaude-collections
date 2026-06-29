@@ -37,8 +37,11 @@ jobs:
             | tee changed-collections.txt
       - name: Validate collections (identity-gated to PR scope)
         run: node scripts/validate.mjs --pr-author "${{ github.event.pull_request.user.login }}" --changed-from changed-collections.txt
-      # index.json must be regenerated and committed when a collection changes.
-      - name: Check index.json is up to date
+      # Each collection's manifest.json (the importable bundle file list the host
+      # fetches from git) must be regenerated and committed when its bundle
+      # changes. index.json is generated and published to Pages post-merge, not
+      # committed, so it is not checked here.
+      - name: Check collection manifests are up to date
         run: node scripts/build-index.mjs --check
 
   test:

@@ -32,8 +32,10 @@ collections/<author>/<slug>/
    The easiest source is an existing collection in your MulmoClaude workspace
    (`data/skills/<slug>/`) — copy `SKILL.md`, `schema.json`, and `views/`.
 3. `npm run validate` — fix any errors.
-4. `npm run build-index` — regenerates `index.json` and each collection's `manifest.json`
-   (the file list the host fetches at import). Commit them.
+4. `npm run build-index` — regenerates each collection's `manifest.json` (the file list the host
+   fetches at import); **commit the manifest**. It also writes `index.json`, but that file is
+   generated-and-published only (gitignored) — the `build-index` workflow republishes it to GitHub
+   Pages on merge, so you don't commit it.
 5. Open a PR and fill in the template.
 
 ## meta.json
@@ -68,7 +70,7 @@ user's workspace **only when their collection is empty** (never overwriting).
 `npm run validate` (and the PR CI) verify: meta completeness + semver + slug rules,
 author/path/PR-author identity (R9), schema validity (host-equivalent rules), seed records
 (JSON, id charset, enum ranges, **secrets hard-fail / PII warn**), custom-view CSP lint, and
-that `index.json` and each `manifest.json` are up to date. The runtime view sandbox (CSP, no phone-home) is the real
+that each `manifest.json` is up to date. The runtime view sandbox (CSP, no phone-home) is the real
 security boundary; the lint is a courtesy.
 
 ## Updating a collection

@@ -3,12 +3,14 @@
 // collections/<author>/<slug>/.
 // Usage:
 //   node scripts/build-index.mjs            # write index.json + manifests
-//   node scripts/build-index.mjs --check    # fail if any generated file is stale (CI)
+//   node scripts/build-index.mjs --check    # fail if any committed manifest is stale (CI)
 //
-// manifest.json lists the importable bundle files (POSIX relative paths) so the
-// host can fetch a collection by raw URL without a directory listing.
+// index.json is published to GitHub Pages by build-index.yml on every push to
+// main and is not committed (gitignored), so --check only guards the committed
+// manifests. manifest.json lists the importable bundle files (POSIX relative
+// paths) so the host can fetch a collection by raw URL without a directory listing.
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -58,23 +60,18 @@ function buildIndex(collections) {
   return { schemaVersion: 1, generatedAt: new Date().toISOString(), registry: REGISTRY, collections: entries };
 }
 
-// Compare ignoring generatedAt so --check is stable across runs.
-const sansTimestamp = (index) => JSON.stringify({ ...index, generatedAt: "" });
-
 function writeArtifacts(collections) {
   for (const collection of collections) writeFileSync(manifestPath(collection.dir), serialize(manifestFor(collection.dir)));
   writeFileSync(INDEX_PATH, serialize(buildIndex(collections)));
   console.log(`Wrote index.json + ${collections.length} manifest(s).`);
 }
 
-function staleArtifacts(collections) {
+function staleManifests(collections) {
   const stale = [];
   for (const collection of collections) {
     const have = existsSync(manifestPath(collection.dir)) ? readJson(manifestPath(collection.dir)) : null;
     if (!have || JSON.stringify(have) !== JSON.stringify(manifestFor(collection.dir))) stale.push(`${collection.id}/manifest.json`);
   }
-  const current = existsSync(INDEX_PATH) ? readFileSync(INDEX_PATH, "utf-8") : "";
-  if (!current || sansTimestamp(JSON.parse(current)) !== sansTimestamp(buildIndex(collections))) stale.push("index.json");
   return stale;
 }
 
@@ -82,12 +79,12 @@ function main() {
   const check = process.argv.includes("--check");
   const collections = listCollections(REPO_ROOT);
   if (check) {
-    const stale = staleArtifacts(collections);
+    const stale = staleManifests(collections);
     if (stale.length) {
-      console.error(`stale generated files — run \`node scripts/build-index.mjs\` and commit:\n  ${stale.join("\n  ")}`);
+      console.error(`stale manifest(s) — run \`node scripts/build-index.mjs\` and commit:\n  ${stale.join("\n  ")}`);
       process.exit(1);
     }
-    console.log(`index.json + ${collections.length} manifest(s) up to date.`);
+    console.log(`${collections.length} manifest(s) up to date.`);
     return;
   }
   writeArtifacts(collections);
