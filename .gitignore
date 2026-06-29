@@ -2,3 +2,7 @@ node_modules/
 .DS_Store
 _site/
 *.log
+
+# Generated artifact: regenerated on every push to main and published to GitHub
+# Pages by build-index.yml; never committed (R2 — no bot-commits to main).
+/index.json

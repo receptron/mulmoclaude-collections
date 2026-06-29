@@ -8,7 +8,7 @@
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "build-index": "node scripts/build-index.mjs",
-    "check-index": "node scripts/build-index.mjs --check",
+    "check-manifests": "node scripts/build-index.mjs --check",
     "test": "node --test"
   }
 }

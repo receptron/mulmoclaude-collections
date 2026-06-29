@@ -33,9 +33,11 @@ collections/<author>/<slug>/
 - `scripts/build-index.mjs` walks `collections/` and regenerates **`index.json`** — the single
   file the MulmoClaude backend fetches (one GET) to render the Discover catalog — plus a
   per-collection **`manifest.json`** listing the bundle files the host fetches when importing. The
-  [`build-index` workflow](./.github/workflows/build-index.yml) publishes it (and the JSON
-  Schemas) to **GitHub Pages** on every push to `main`, so the backend reads a stable URL
-  without bot-commits to `main`.
+  [`build-index` workflow](./.github/workflows/build-index.yml) regenerates `index.json` and
+  publishes it (and the JSON Schemas) to **GitHub Pages** on every push to `main`, so the backend
+  reads a stable URL without bot-commits to `main`. `index.json` is therefore **generated, not
+  committed** (it's gitignored); the committed bundle artifacts are the `manifest.json` files,
+  which the host fetches from git by raw URL.
   > Enable Pages once: **Settings → Pages → Source: GitHub Actions**.
 - `scripts/validate.mjs` checks every collection (run by [`pr-validate`](./.github/workflows/pr-validate.yml)
   on each PR): metadata, semver, author/PR-author identity, host-equivalent schema validity,
@@ -46,10 +48,10 @@ collections/<author>/<slug>/
 ## Commands
 
 ```bash
-npm run validate       # validate every collection
-npm run build-index    # regenerate index.json
-npm run check-index    # fail if index.json is stale
-npm test               # run the unit tests
+npm run validate         # validate every collection
+npm run build-index      # regenerate index.json (gitignored) + each manifest.json
+npm run check-manifests  # fail if any committed manifest.json is stale
+npm test                 # run the unit tests
 ```
 
 ## License
