@@ -2,7 +2,7 @@
 
 ## 手順
 
-1. Bash で `python3 data/jma-weather/fetch.py` を実行する（天気予報 + 台風 + 天気図 + 海上予報が一括で更新される）。
+1. Bash で `python3 {skillDir}/fetch.py --out-dir {dataPath}` を実行する（天気予報 + 台風 + 天気図 + 海上予報が一括で更新される）。`<collection_paths>` block の `dataPath` を `--out-dir` に必ず渡すこと（スクリプトの argparse デフォルトは無視）。
 2. 成功時 (exit 0): 何も出力しない。チャット返信なし、要約なし、解説なし。そのまま終了する。
 3. 失敗時 (exit != 0): stderr の最後 200 文字程度を含めたエラーメッセージを返し、非ゼロ終了する（ホストの ingest が失敗を検知して bell を立てる）。
 
