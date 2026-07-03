@@ -1,6 +1,24 @@
 {
   "title": "気象庁 天気予報",
   "icon": "partly_cloudy_day",
+  "dynamicIcon": {
+    "source": {
+      "collection": "jma-weather",
+      "from": "latest",
+      "orderBy": "date",
+      "where": [
+        { "field": "cityName", "op": "eq", "value": "熊本" },
+        { "field": "source", "op": "eq", "value": "today" }
+      ]
+    },
+    "rules": [
+      { "where": [{ "field": "weatherCode", "op": "gte", "value": "400" }], "icon": "weather_snowy" },
+      { "where": [{ "field": "weatherCode", "op": "gte", "value": "300" }], "icon": "rainy" },
+      { "where": [{ "field": "weatherCode", "op": "gte", "value": "200" }], "icon": "cloud" },
+      { "where": [{ "field": "weatherCode", "op": "gte", "value": "100" }], "icon": "sunny" }
+    ],
+    "fallback": "partly_cloudy_day"
+  },
   "dataPath": "data/jma-weather/items",
   "primaryKey": "id",
   "fields": {
