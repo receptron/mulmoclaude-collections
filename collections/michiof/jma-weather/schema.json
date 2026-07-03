@@ -7,7 +7,7 @@
       "from": "latest",
       "orderBy": "date",
       "where": [
-        { "field": "cityName", "op": "eq", "value": "熊本" },
+        { "field": "office", "op": "eq", "valueFrom": { "record": "_config", "field": "defaultCity" } },
         { "field": "source", "op": "eq", "value": "today" }
       ]
     },
