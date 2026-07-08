@@ -7,7 +7,7 @@
       "from": "latest",
       "orderBy": "date",
       "where": [
-        { "field": "office", "op": "eq", "valueFrom": { "record": "_config", "field": "defaultCity" } },
+        { "field": "office", "op": "eq", "valueFrom": { "record": "config", "field": "defaultCity" } },
         { "field": "source", "op": "eq", "value": "today" }
       ]
     },
