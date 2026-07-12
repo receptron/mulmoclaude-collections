@@ -26,7 +26,18 @@ import urllib.request
 from pathlib import Path
 
 UA = "mulmoclaude-jma-weather/1.0"
+
+# scripts は常に data/skills/<slug>/scripts/ に配置されるため、そこから 4 つ上が workspace root。
+# (旧レイアウト data/jma-weather/*.py 時代は parents[2] だった; 2026-07-05 移動)
+WORKSPACE_ROOT = Path(__file__).resolve().parents[4]
 _HTTP_CACHE_DIR = Path(__file__).resolve().parent / "const" / "http_cache"
+
+
+def resolve_out_dir(path_str) -> Path:
+    """--out-dir 等の相対パスを workspace root 基準で絶対化する（絶対パスはそのまま返す）。
+    全 fetch スクリプトが同じ規則で out-dir を解くための共通ヘルパー。"""
+    p = Path(path_str)
+    return p if p.is_absolute() else WORKSPACE_ROOT / p
 
 
 def _ssl_context():

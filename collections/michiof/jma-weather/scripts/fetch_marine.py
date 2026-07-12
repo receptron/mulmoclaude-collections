@@ -115,7 +115,7 @@ def parse_primary_direction(lines: list[str]) -> str | None:
 # ──────────────────────────────────────────────────────────
 
 # HTTP 取得 + 書き込みは共通モジュール jma_http に集約 (L3 効率化: 条件付きGET + 変更時のみ書込)
-from jma_http import fetch_json, write_record_if_changed  # noqa: E402
+from jma_http import fetch_json, write_record_if_changed, resolve_out_dir  # noqa: E402
 
 
 def build_records(office: str, office_label: str, src: dict, label_pos: dict, geoms: dict, now_iso: str) -> list[dict]:
@@ -191,11 +191,15 @@ def write_record(out_dir: Path, rec: dict) -> Path:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="JMA 地方海上予報を fetch し marine items を書き出す")
-    ap.add_argument("--out-dir", default=str(Path(__file__).parent / "items"))
+    # デフォルトは Michio (author) の dataPath。scheduler 経由は refresh.md が
+    # 相対パスの場合は workspace root からの相対として解決する。
+    ap.add_argument("--out-dir", required=True,
+                    help="出力先 items ディレクトリ。<collection_paths> の {dataPath} を渡す "
+                         "(作者=data/jma-weather/items / 取り込み=data/collections/<slug>/items)")
     ap.add_argument("--only", help="特定 office だけ (例: 280000)")
     args = ap.parse_args()
 
-    out_dir = Path(args.out_dir)
+    out_dir = resolve_out_dir(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # 1) 海域重心 lon/lat

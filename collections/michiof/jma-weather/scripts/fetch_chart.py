@@ -43,7 +43,7 @@ TARGETS = [
 
 
 # HTTP 取得 + 書き込みは共通モジュール jma_http に集約 (L3 効率化: 条件付きGET + 変更時のみ書込)
-from jma_http import fetch_bytes as _fetch_bytes, write_record_if_changed  # noqa: E402
+from jma_http import fetch_bytes as _fetch_bytes, write_record_if_changed, resolve_out_dir, WORKSPACE_ROOT  # noqa: E402
 
 
 def _parse_filename(filename: str) -> dict | None:
@@ -185,10 +185,11 @@ def fetch_weather_charts(out_dir: Path, now_iso: str) -> tuple[int, int, int, in
 
     返り値: (取得成功数, archived, deleted JSON, deleted orphan PNG)
     """
-    workspace = out_dir.parents[1] if out_dir.name == "items" else out_dir.parent
-    charts_dir = workspace / "data" / "jma-weather" / "charts"
+    # charts は items の姉妹ディレクトリに置く (`<dataPath 親>/charts/`)。
+    # Michio (author): data/jma-weather/charts, registry importer: data/collections/jma-weather/charts。
+    charts_dir = out_dir.parent / "charts"
     charts_dir.mkdir(parents=True, exist_ok=True)
-    charts_dir_rel = "data/jma-weather/charts"
+    charts_dir_rel = str(charts_dir.relative_to(WORKSPACE_ROOT))
 
     try:
         cat = json.loads(_fetch_bytes(CATALOG_URL))
@@ -254,11 +255,12 @@ def fetch_weather_charts(out_dir: Path, now_iso: str) -> tuple[int, int, int, in
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--out-dir", default=os.environ.get("JMA_OUT_DIR", "data/jma-weather/items"))
+    p.add_argument("--out-dir", required=True,
+                   help="出力先 items ディレクトリ。<collection_paths> の {dataPath} を渡す "
+                        "(作者=data/jma-weather/items / 取り込み=data/collections/<slug>/items)")
     args = p.parse_args()
 
-    workspace = Path(__file__).resolve().parents[2]
-    out_dir = Path(args.out_dir) if Path(args.out_dir).is_absolute() else workspace / args.out_dir
+    out_dir = resolve_out_dir(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     now_iso = datetime.now(JST).isoformat()
 

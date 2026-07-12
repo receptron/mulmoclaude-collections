@@ -382,7 +382,7 @@ def weather_code_to_icon(code: str) -> str:
 # HTTP 取得 + 書き込みは共通モジュール jma_http に集約 (L3 効率化: 条件付きGET + 変更時のみ書込)。
 # fetch_json/fetch_bytes は条件付きGET (304 でキャッシュ本文を返す)、
 # write_record_if_changed は updatedAt 以外が同一なら書かない。
-from jma_http import http_get, fetch_json, fetch_bytes, write_record_if_changed  # noqa: E402
+from jma_http import http_get, fetch_json, fetch_bytes, write_record_if_changed, resolve_out_dir  # noqa: E402
 
 
 def fetch_overview_text(office: str) -> str:
@@ -1577,12 +1577,13 @@ def fetch_warnings(out_dir: Path, now_iso: str) -> tuple[int, int]:
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--only", default=os.environ.get("JMA_ONLY"), help="単一都市の office code (default: 全 11 都市)")
-    p.add_argument("--out-dir", default=os.environ.get("JMA_OUT_DIR", "data/jma-weather/items"))
+    p.add_argument("--out-dir", required=True,
+                   help="出力先 items ディレクトリ。<collection_paths> の {dataPath} を渡す "
+                        "(作者=data/jma-weather/items / 取り込み=data/collections/<slug>/items)")
     p.add_argument("--sleep", type=float, default=float(os.environ.get("JMA_SLEEP", "0.3")), help="都市間 sleep 秒 (rate-limit 配慮)")
     args = p.parse_args()
 
-    workspace = Path(__file__).resolve().parents[2]
-    out_dir = Path(args.out_dir) if Path(args.out_dir).is_absolute() else workspace / args.out_dir
+    out_dir = resolve_out_dir(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # ユーザー設定 (ロスター・既定都市) を config.json から読み、グローバルを上書きする。

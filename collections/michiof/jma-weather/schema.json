@@ -90,7 +90,12 @@
         "level": {
           "type": "enum",
           "label": "レベル",
-          "values": ["special", "danger", "warning", "advisory"]
+          "values": [
+            "special",
+            "danger",
+            "warning",
+            "advisory"
+          ]
         },
         "status": {
           "type": "string",
@@ -360,5 +365,70 @@
     "schedule": "hourly",
     "role": "general",
     "template": "templates/refresh.md"
+  },
+  "dynamicIcon": {
+    "source": {
+      "collection": "jma-weather",
+      "from": "latest",
+      "orderBy": "date",
+      "where": [
+        {
+          "field": "source",
+          "op": "eq",
+          "value": "today"
+        },
+        {
+          "field": "office",
+          "op": "eq",
+          "valueFrom": {
+            "record": "config",
+            "field": "defaultCity"
+          }
+        }
+      ]
+    },
+    "rules": [
+      {
+        "where": [
+          {
+            "field": "weatherCode",
+            "op": "gte",
+            "value": "400"
+          }
+        ],
+        "icon": "weather_snowy"
+      },
+      {
+        "where": [
+          {
+            "field": "weatherCode",
+            "op": "gte",
+            "value": "300"
+          }
+        ],
+        "icon": "rainy"
+      },
+      {
+        "where": [
+          {
+            "field": "weatherCode",
+            "op": "gte",
+            "value": "200"
+          }
+        ],
+        "icon": "cloud"
+      },
+      {
+        "where": [
+          {
+            "field": "weatherCode",
+            "op": "gte",
+            "value": "100"
+          }
+        ],
+        "icon": "clear_day"
+      }
+    ],
+    "fallback": "partly_cloudy_day"
   }
 }

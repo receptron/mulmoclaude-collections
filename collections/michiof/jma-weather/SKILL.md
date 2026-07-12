@@ -1,6 +1,6 @@
 ---
 name: jma-weather
-description: 気象庁の公開 API + 防災情報 XML から **天気予報・警報注意報・台風・地上天気図・地方海上予報** を取り込んで 1 つに統合する schema-driven collection。LLM 不要の Python (`data/jma-weather/fetch.py` + `fetch_chart.py` + `fetch_marine.py`) が直接 JMA → JSON → コレクションファイルを書き出す。`/collections/jma-weather` のカスタムビュー「天気予報」で 5 モード切替: 指定地域カード (警報バー付き) / 全国一覧 / 🌀 台風 (活動中のみ) / 🗺️ 天気図 (実況・24h・48h 予想) / 🌊 海上 (37 海域の波・風予報、今日/明日)。レコードは `source` で識別 (today/tomorrow/weekly/past = 天気予報、warning = 警報注意報、typhoon = 台風、chart = 天気図、marine = 海上予報)。ユーザーが「今日の天気」「全国の天気」「週間予報」「気象庁から取り込んで」「警報出てる?」「土砂災害」「台風どこ?」「天気図見せて」「等圧線」「前線」「波高」「海上予報」「瀬戸内海」などと言ったら使う。レコードは `data/jma-weather/items/<office>-<date>.json` (天気) / `<office>-warning.json` (警報) / `typhoon-<eventId>.json` (台風) / `<chartType>-<targetDateHour>.json` (天気図) / `marine-<areaCode>.json` (海上予報) で 1 ファイル 1 レコード。
+description: 気象庁の公開 API + 防災情報 XML から **天気予報・警報注意報・台風・地上天気図・地方海上予報** を取り込んで 1 つに統合する schema-driven collection。LLM 不要の Python (`data/skills/{slug}/scripts/fetch.py` + `fetch_chart.py` + `fetch_marine.py`) が直接 JMA → JSON → コレクションファイルを書き出す。`/collections/jma-weather` のカスタムビュー「天気予報」で 5 モード切替: 指定地域カード (警報バー付き) / 全国一覧 / 🌀 台風 (活動中のみ) / 🗺️ 天気図 (実況・24h・48h 予想) / 🌊 海上 (37 海域の波・風予報、今日/明日)。レコードは `source` で識別 (today/tomorrow/weekly/past = 天気予報、warning = 警報注意報、typhoon = 台風、chart = 天気図、marine = 海上予報)。ユーザーが「今日の天気」「全国の天気」「週間予報」「気象庁から取り込んで」「警報出てる?」「土砂災害」「台風どこ?」「天気図見せて」「等圧線」「前線」「波高」「海上予報」「瀬戸内海」などと言ったら使う。レコードは `{dataPath}/<office>-<date>.json` (天気) / `<office>-warning.json` (警報) / `typhoon-<eventId>.json` (台風) / `<chartType>-<targetDateHour>.json` (天気図) / `marine-<areaCode>.json` (海上予報) で 1 ファイル 1 レコード。
 ---
 
 # 気象庁 天気予報 (schema-driven collection)
@@ -10,25 +10,33 @@ description: 気象庁の公開 API + 防災情報 XML から **天気予報・�
 加えて **「天気予報」カスタムビュー** が表示され、指定地域カード / 全国一覧を
 タブで切り替えられる。
 
-定期取得は **`data/jma-weather/fetch.py`** が単独で完結する（LLM 不要の Python）。
+定期取得は **`data/skills/{slug}/scripts/fetch.py`** が単独で完結する（LLM 不要の Python）。
 コレクションの `ingest.kind: "agent"` から **毎時** 起動され、template (`templates/refresh.md`)
-が `python3 data/jma-weather/fetch.py` を呼ぶだけ。コレクションヘッダの **Refresh** ボタンからも
-同じ経路で手動実行できる。
+が `python3 data/skills/{slug}/scripts/fetch.py --out-dir {dataPath}` を呼ぶだけ。
+コレクションヘッダの **Refresh** ボタンからも同じ経路で手動実行できる。
+
+> **パス規約（配布先で slug / レイアウトが変わっても動かすため）**: このドキュメント内の実行コマンドに出てくる `{slug}` と `{dataPath}` は、ホストが注入する `<collection_paths>` ブロックの値に置き換えて実行する（SKILL.md 本文はホストが置換しないので、エージェントが自分で埋める）。スクリプトは常に `data/skills/{slug}/scripts/` に配置され、出力先 `{dataPath}` は **作者(Michio)=`data/jma-weather/items` / registry 取り込み=`data/collections/<slug>/items`** と異なる。`--out-dir` は必須（省略するとスクリプトが argparse エラーで停止する）。リテラルの `data/jma-weather/...` をそのまま実行しないこと。
 
 ## 初期セットアップ（対話）
 
 import 直後、ユーザーと**対話しながら「指定地域（既定で開く都市）」を決める**。Claude が以下を順に行う。
 
-### A. スクリプト配置（importer 初回のみ・host が自動配置しないファイル）
+### A. スクリプト配置（registry import 時は自動、手動 install 時のみ必要）
 
-host は `schema.json` / `SKILL.md` / `views/` / `seed/items/` を自動配置するが、`scripts/*.py` は規約外なので
-配置しない。次の Python 群を `data/jma-weather/` に取得する（stdlib のみ、pip 依存なし）:
+registry から取り込んだ場合、host が `manifest.json` の `scripts/*.py` を
+`data/skills/{slug}/scripts/` に自動配置するので何もしなくてよい。ミラーの
+`.claude/skills/{slug}/` には配置されない（allowlist は SKILL.md / schema.json /
+templates/* のみ）が、Bash の `python3 <path>` は workspace 相対で動くので支障なし。
+
+registry を経由せず手動で入れる場合のみ、次の Python 群を取得する（stdlib のみ、pip 依存なし）。
+`SLUG` はインストール先の slug に置き換える:
 
 ```bash
-mkdir -p data/jma-weather
+SLUG=jma-weather   # ← インストール先の slug に変更
+mkdir -p "data/skills/$SLUG/scripts"
 BASE="https://raw.githubusercontent.com/receptron/mulmoclaude-collections/main/collections/michiof/jma-weather/scripts"
 for f in jma_http.py fetch.py fetch_chart.py fetch_marine.py resolve_city.py; do
-  curl -fsSL "$BASE/$f" -o "data/jma-weather/$f"
+  curl -fsSL "$BASE/$f" -o "data/skills/$SLUG/scripts/$f"
 done
 ```
 
@@ -40,10 +48,13 @@ done
 ユーザーに「**どの地域を既定の指定地域にしますか？**（例: 横浜 / 熊本 / 大阪）」と尋ね、答えを `resolve_city.py` に渡す:
 
 ```bash
-python3 data/jma-weather/resolve_city.py <地域名> --write --set-default
+# {slug} / {dataPath} は <collection_paths> の値に置換する（パス規約を参照）。
+# --out-dir は必須。作者=data/jma-weather/items、取り込み=data/collections/<slug>/items。
+python3 data/skills/{slug}/scripts/resolve_city.py <地域名> --write --set-default \
+  --out-dir {dataPath}
 ```
 
-- これは **JMA 公式コード体系（area.json）から office / class10 / class20(警報) / 週間予報の気温地点 / AMeDAS地点を決定論的に解決**し、`data/jma-weather/items/config.json`（`source:"config"` レコード）の `cities[]` に upsert + `defaultCity` を設定する。
+- これは **JMA 公式コード体系（area.json）から office / class10 / class20(警報) / 週間予報の気温地点 / AMeDAS地点を決定論的に解決**し、`{dataPath}/config.json`（`source:"config"` レコード）の `cities[]` に upsert + `defaultCity` を設定する。
 - **曖昧なとき**（例「横浜」→ 青森の横浜町 vs 神奈川の横浜市）は候補を一覧表示して停止する。Claude はその候補をユーザーに見せ、選ばれた class20 コードで `--pick <code> --write --set-default` を再実行する。
 - 既定の11都市のどれかを選んだ場合も同じコマンドでよい（コードを再解決し既定に設定、地図座標は保持）。
 
@@ -52,9 +63,10 @@ python3 data/jma-weather/resolve_city.py <地域名> --write --set-default
 ### C. 初回取得
 
 ```bash
-python3 data/jma-weather/fetch.py            # 全ロスター取得
+# scheduler と同じく --out-dir に {dataPath} を渡す（必須。省略すると argparse エラーで停止）。
+python3 data/skills/{slug}/scripts/fetch.py --out-dir {dataPath}
 # まず1都市だけ試すなら:
-python3 data/jma-weather/fetch.py --only <office>
+python3 data/skills/{slug}/scripts/fetch.py --out-dir {dataPath} --only <office>
 ```
 
 以後は schema の `ingest`（毎時 agent）が自動で回す。
@@ -63,7 +75,7 @@ python3 data/jma-weather/fetch.py --only <office>
 
 ## 取得対象 (既定 11 都市)
 
-**ロスターと既定都市は `data/jma-weather/items/config.json`（`source:"config"` レコード）が正本**。
+**ロスターと既定都市は `{dataPath}/config.json`（`source:"config"` レコード）が正本**。
 `fetch.py` と カスタムビューの両方がこれを読む。`config.json` が無い場合のフォールバックが
 `fetch.py` の `_BUILTIN_CITIES`（下表）/ view の `CITY_ORDER`。
 地域の追加・変更は手書きせず **`resolve_city.py <地域> --write [--set-default]`**（→ 初期セットアップ B）で行う。
@@ -144,7 +156,7 @@ python3 data/jma-weather/fetch.py --only <office>
 
 1 回の取得で 11 都市 × 約 8-9 日 = **約 88-99 レコード** が更新される。
 
-## レコード形状 (`data/jma-weather/items/<office>-<YYYY-MM-DD>.json`)
+## レコード形状 (`{dataPath}/<office>-<YYYY-MM-DD>.json`)
 
 - `id` — 主キー。`<office>-<date>` (例: `140000-2026-06-21`)
 - `office` — JMA office code
@@ -196,7 +208,7 @@ python3 data/jma-weather/fetch.py --only <office>
 
 ## 取得効率（条件付きGET + 変更時のみ書込）
 
-HTTP 取得と書き込みは共通モジュール **`data/jma-weather/jma_http.py`** に集約され、3スクリプトが import する。
+HTTP 取得と書き込みは共通モジュール **`data/skills/{slug}/scripts/jma_http.py`** に集約され、3スクリプトが import する。
 
 - **条件付きGET**: `fetch_json` / `fetch_bytes` は `If-None-Match` / `If-Modified-Since` を付けて取得する。JMA bosai は `ETag` / `Last-Modified` + `Cache-Control: max-age=60` を返し、未更新には **`304 Not Modified`** を返す。304 のときは `const/http_cache/` のキャッシュ本文を返してダウンロードを省略する（呼び出し側は無変更）。
 - **変更時のみ書込**: `write_record_if_changed()` は `updatedAt` 以外が既存ファイルと完全一致ならレコードを書かない。毎時の無駄な書き込み churn を防ぐ（今日レコードは AMeDAS で毎回変わるので書かれる）。
@@ -207,7 +219,7 @@ HTTP 取得と書き込みは共通モジュール **`data/jma-weather/jma_http.
 ## 運用
 
 - 定期取得: schema.json の `ingest` ブロック (`kind: "agent"`, `schedule: "hourly"`, `role: "general"`, `template: "templates/refresh.md"`) でホストが毎時 hidden agent を起動する。`config/scheduler/tasks.json` には登録しない (2026-06-27 移行)
-- 手動取得: `/collections/jma-weather` ヘッダの **Refresh** ボタンか、`python3 data/jma-weather/fetch.py` を直接実行
+- 手動取得: `/collections/jma-weather` ヘッダの **Refresh** ボタンか、`python3 data/skills/{slug}/scripts/fetch.py --out-dir {dataPath}` を直接実行
 - 同一 id のレコードは**上書き**される
 - 取得失敗時はスクリプトが exit 1 → ingest agent も非ゼロ終了 → ホストが「Collection refresh failed: jma-weather」bell を立て、次回成功でクリアする。1 都市でも成功すれば exit 0
 - cadence 変更履歴: 2026-06-21 〜 2026-06-26 はスケジューラの 3 時間間隔 / 2026-06-27〜 ingest agent の hourly (8 倍 → 24 倍/日)。JMA の bosai/forecast は公開エンドポイントで負荷影響は軽微
@@ -288,7 +300,7 @@ https://www.jma.go.jp/bosai/warning/data/r8/<office>.json (11 都市)
        ↓ class20 の "継続" は class10 の降格 status で上書き
        ↓ code ごとに reportDatetime 最大の status を採用
        ↓ resolve_warning(code, status) で (name, level, status_label) に変換
-       ↓ data/jma-weather/items/<office>-warning.json
+       ↓ {dataPath}/<office>-warning.json
 ```
 
 **レコード形状** (`<office>-warning.json`):
@@ -335,7 +347,7 @@ extra.xml + extra_l.xml (高頻度 + 約24時間履歴)
          ・実況/推定 points は観測ソースから
          ・予報 points は予報ソースから (観測の 実況 dt より後のものだけ)
        ↓ 観測ソース rdt が ACTIVE_WINDOW_HOURS (=12h) 内 → active
-       ↓ data/jma-weather/items/typhoon-<EventID>.json
+       ↓ {dataPath}/typhoon-<EventID>.json
 ```
 
 **なぜ 2 ソース合成か**: 旧設計は「予報が 24h 以上ある VPTW の中で最新」を 1 つ選んでいたため、温帯低気圧化後など完全版の発番が遅れているとき **実況時刻が 3〜10 時間古い VPTW を採用**してしまい、ビューに「実況 18:00」と古い時刻が表示されていた。新設計は実況時刻と予報内容を別ソースから合成して、JMA が最後に位置確認した時刻 (=21:00) を実況として表示する。
@@ -394,7 +406,7 @@ JMA 仕様上、温帯/熱帯低気圧化のとき VPTW 発番は止まるので
   - `archived: false`: 青系バッジ (`.dissipating-tag`)、本体はフル表示 (closing announcement から 6h 以内)
   - `archived: true`: 橙系バッジ (`.archived-tag`)、本体は薄く (closing announcement から 6h+ 経過、または鮮度切れ)
 
-**運用**: 天気と同じ 3 時間ごとの scheduler に相乗り。台風専用タスクは作らない。台風期に手動で `python3 data/jma-weather/fetch.py` を流して即時更新も可能。
+**運用**: 天気と同じ scheduler に相乗り。台風専用タスクは作らない。台風期に手動で `python3 data/skills/{slug}/scripts/fetch.py --out-dir {dataPath}` を流して即時更新も可能。
 
 ## 天気図データ (source="chart")
 
@@ -415,8 +427,8 @@ https://www.jma.go.jp/bosai/weather_map/data/list.json (カタログ)
   └ near.ft48 → fsas48 (48h 予想, 12 時間ごと)
        ↓ カラー版 (JRcolor) の最新ファイル名を選ぶ
        ↓ PNG を https://www.jma.go.jp/bosai/weather_map/data/png/<filename> から
-         ローカルに DL: data/jma-weather/charts/<filename>.png
-       ↓ JSON レコード: data/jma-weather/items/<chartType>-<targetDateHour>.json
+         ローカルに DL: {dataPath}/../charts/<filename>.png（items の隣の charts/ ディレクトリ）
+       ↓ JSON レコード: {dataPath}/<chartType>-<targetDateHour>.json
 ```
 `fetch.py` の末尾で `from fetch_chart import fetch_weather_charts` をして実行。
 
@@ -439,7 +451,7 @@ https://www.jma.go.jp/bosai/weather_map/data/list.json (カタログ)
 - `summary` — displayField
 - `pngFilename` — JMA のファイル名そのまま (例: `20260624230030_0_Z__C_010000_..._image.png`)
 - `pngUrl` — `https://www.jma.go.jp/bosai/weather_map/data/png/<filename>` (ビューはこれを `<img src>` に使う)
-- `pngPath` — `data/jma-weather/charts/<filename>` (ローカルキャッシュ、Finder で開ける)
+- `pngPath` — `{dataPath}/../charts/<filename>` (items の隣の charts/、ローカルキャッシュ、Finder で開ける)
 - `archived` — boolean
 
 **ビュー統合**: `views/news-weather.html` の右上スイッチに **🗺️ 天気図** ボタン。
