@@ -541,7 +541,20 @@
       .typhoon-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
       #typhoon-time-controls { display: flex; gap: 10px; align-items: center; flex: 1; min-width: 360px; }
       #typhoon-slider { flex: 1; accent-color: var(--accent2); cursor: pointer; }
-      #typhoon-time-label { color: var(--text); font-size: 12px; min-width: 200px; font-variant-numeric: tabular-nums; }
+      /* 地図右上のオーバーレイ時刻表示 (時刻スライド mode のみ)。
+         ツールバーは操作系 (再生 / スライダー) だけに絞り、"いま何時か" は
+         地図の視線を移さずに読めるようにここに大きく出す。 */
+      .typhoon-time-overlay {
+        position: absolute; top: 12px; right: 12px;
+        background: rgba(20, 30, 60, 0.88); color: #fff;
+        padding: 8px 14px; border-radius: 8px;
+        font-size: 15px; font-weight: 600;
+        font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        z-index: 1000; pointer-events: none;
+        min-width: 220px; text-align: center; line-height: 1.4;
+      }
+      .typhoon-time-overlay .live { color: #ffd43b; margin-left: 6px; font-size: 12px; }
       .typhoon-play-btn { background: var(--accent2); color: #001e3a; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; min-width: 40px; }
       .typhoon-play-btn:disabled { opacity: 0.4; cursor: default; }
       @media (max-width: 800px) {
@@ -1036,7 +1049,8 @@
           <div id="typhoon-time-controls" style="display:none">
             <button id="typhoon-play" class="typhoon-play-btn" title="再生 / 一時停止">▶</button>
             <input type="range" id="typhoon-slider" min="0" max="0" step="1" value="0" />
-            <span id="typhoon-time-label">—</span>
+            <!-- 時刻テキストは地図右上のオーバーレイ (.typhoon-time-overlay) に移設。
+                 ツールバーは操作系のみに絞って視線移動を減らす。 -->
           </div>
         </div>
         <div class="typhoon-layout">
@@ -1459,7 +1473,6 @@
         // 時刻スライダー: union of dts across active typhoons (archived は含めない方が自然)
         typhoonTimes = buildTyphoonTimes(typhoons.filter((t) => t.archived !== true));
         const slider = $("#typhoon-slider");
-        const label = $("#typhoon-time-label");
         if (slider) {
           slider.min = 0;
           slider.max = Math.max(0, typhoonTimes.length - 1);
@@ -1469,14 +1482,17 @@
           $("#typhoon-play").disabled = typhoonTimes.length === 0;
         }
         const currentTime = typhoonTimes[typhoonTimeIdx] || null;
-        if (label) {
+        // 地図右上の時刻オーバーレイ更新 (single mode のみ表示)。all mode では隠す。
+        const overlay = document.getElementById("typhoon-time-overlay");
+        if (overlay) {
           if (typhoonTimeMode === "single" && currentTime) {
-            // 実況時刻と一致するときだけ "実況" バッジを付ける。それ以外は JST 時刻のみ。
             const liveDt = typhoons.find((t) => t.archived !== true)?.forecastPoints?.find((p) => p.dtType === "実況")?.dt;
-            const suffix = (liveDt && new Date(currentTime).getTime() === new Date(liveDt).getTime()) ? " (実況)" : "";
-            label.textContent = formatTyphoonTimeLabel(currentTime) + suffix;
+            const isLive = liveDt && new Date(currentTime).getTime() === new Date(liveDt).getTime();
+            overlay.innerHTML = escapeHtml(formatTyphoonTimeLabel(currentTime)) +
+              (isLive ? '<span class="live">● 実況</span>' : "");
+            overlay.style.display = "";
           } else {
-            label.textContent = "全期間表示";
+            overlay.style.display = "none";
           }
         }
 
@@ -1509,6 +1525,16 @@
             return div;
           };
           legend.addTo(_typhoonMap);
+          // 時刻オーバーレイ (右上、single mode で表示)。textContent は renderTyphoon
+          // 側で毎回書き換えるので、ここでは空の器だけ用意する。
+          const timeOverlay = L.control({ position: "topright" });
+          timeOverlay.onAdd = function () {
+            const div = L.DomUtil.create("div", "typhoon-time-overlay");
+            div.id = "typhoon-time-overlay";
+            div.style.display = "none";
+            return div;
+          };
+          timeOverlay.addTo(_typhoonMap);
         }
         if (_typhoonLayer) _typhoonLayer.remove();
         _typhoonLayer = L.layerGroup().addTo(_typhoonMap);
@@ -1525,12 +1551,62 @@
           // 時刻モード別の対象点を決める:
           //   all:    全点描画 + 全期間の中心ライン
           //   single: currentTime と一致する点だけ描画 + 始点〜currentTime までの中心ライン
+          //           この台風が currentTime に予報点を持たなければ「直前既知点」に
+          //           小さな "受信データなし" マーカーを置いてスキップ。
+          //           背景: JMA VPTW は同じ台風でも発表回により 12h予報を含まないこと
+          //           があり (実測: BAVI TC2611 の serial 1-7 / 25-27 は 12h 欠落、
+          //           8-24 は 12h 有り)、複数台風の dt を union すると必ず欠落時刻が
+          //           できる。「マーカーゼロ + 全経路点線」だと消えた/バグに見えるので
+          //           「JMA 側で発表がない」と分かる小マーカーで意図を伝える。
           let pointsToDraw, lineCoords;
           if (typhoonTimeMode === "single" && currentTime) {
-            pointsToDraw = allPoints.filter((p) => p.dt === currentTime);
-            // ライン: 始点〜currentTime まで (currentTime の点を含む)
             const cutIdx = allPoints.findIndex((p) => p.dt === currentTime);
-            lineCoords = (cutIdx >= 0 ? allPoints.slice(0, cutIdx + 1) : allPoints).map((p) => [p.lat, p.lng]);
+            if (cutIdx < 0) {
+              // 直前既知点 (dt <= currentTime の最新点) を探す
+              const currentMs = new Date(currentTime).getTime();
+              let lastIdx = -1;
+              for (let i = 0; i < allPoints.length; i++) {
+                const t = new Date(allPoints[i].dt).getTime();
+                if (isNaN(t)) continue;
+                if (t <= currentMs) lastIdx = i; else break;
+              }
+              if (lastIdx < 0) {
+                // 発表開始より前の時刻 (この台風はまだ発生していない扱い)
+                allPoints.forEach((p) => allBounds.push([p.lat, p.lng]));
+                return;
+              }
+              const lp = allPoints[lastIdx];
+              // ゴースト経路 (始点〜直前既知点までを薄い点線)
+              const ghost = allPoints.slice(0, lastIdx + 1).map((p) => [p.lat, p.lng]);
+              if (ghost.length >= 2) {
+                L.polyline(ghost, {
+                  color, weight: 2, dashArray: "6 4", opacity: 0.3,
+                }).addTo(_typhoonLayer);
+              }
+              // 直前既知点に空の小マーカー (半透明の輪郭のみ)
+              L.circleMarker([lp.lat, lp.lng], {
+                radius: 5, color, weight: 1.5,
+                fillColor: "#fff", fillOpacity: 0.5, opacity: 0.6,
+              }).addTo(_typhoonLayer);
+              // "受信データなし" ラベル
+              L.marker([lp.lat, lp.lng], {
+                icon: L.divIcon({
+                  className: "typhoon-label-tag-wrap",
+                  iconSize: null,
+                  iconAnchor: [-10, 8],
+                  html: '<span class="typhoon-label-tag" style="color:' + color +
+                        ';border-color:' + color + ';opacity:0.65;font-style:italic">' +
+                        'この時刻の JMA 発表なし<br>直近 ' +
+                        escapeHtml(formatTyphoonTimeShort(lp.dt)) + '</span>',
+                }),
+                interactive: false,
+                keyboard: false,
+              }).addTo(_typhoonLayer);
+              allPoints.forEach((p) => allBounds.push([p.lat, p.lng]));
+              return;
+            }
+            pointsToDraw = allPoints.slice(cutIdx, cutIdx + 1);
+            lineCoords = allPoints.slice(0, cutIdx + 1).map((p) => [p.lat, p.lng]);
           } else {
             pointsToDraw = allPoints;
             lineCoords = allPoints.map((p) => [p.lat, p.lng]);

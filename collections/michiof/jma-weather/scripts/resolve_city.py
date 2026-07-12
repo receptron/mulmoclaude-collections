@@ -30,11 +30,11 @@ class10 / office / 予報気温地点 / AMeDAS地点 を決定論的に導出す
 import argparse
 import json
 import os
-import ssl
 import sys
-import urllib.request
 
-UA = {"User-Agent": "mulmoclaude-jma-weather/1.0"}
+# HTTP 取得 (certifi フォールバック含む SSL 処理) は共通モジュール jma_http に集約。
+from jma_http import fetch_json as _jma_fetch_json, resolve_out_dir
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONST_DIR = os.path.join(HERE, "const")
 AREA_URL = "https://www.jma.go.jp/bosai/common/const/area.json"
@@ -42,41 +42,15 @@ AMEDAS_TABLE_URL = "https://www.jma.go.jp/bosai/amedas/const/amedastable.json"
 FORECAST_URL = "https://www.jma.go.jp/bosai/forecast/data/forecast/{office}.json"
 
 
-def _contexts():
-    """試行する SSL コンテキストを優先順で返す。
-    certifi があればそれを最優先 (macOS の Python.framework は CA バンドル未同梱で
-    default だと CERTIFICATE_VERIFY_FAILED になるため)。次に default
-    (Docker サンドボックス内ではこれで通る)。"""
-    ctxs = []
-    try:
-        import certifi
-        ctxs.append(ssl.create_default_context(cafile=certifi.where()))
-    except Exception:
-        pass
-    try:
-        ctxs.append(ssl.create_default_context())
-    except Exception:
-        pass
-    return ctxs or [None]
-
-
 def fetch_json(url, timeout=20):
-    req = urllib.request.Request(url, headers=UA)
-    last = None
-    for ctx in _contexts():
-        try:
-            kw = {"timeout": timeout}
-            if ctx is not None:
-                kw["context"] = ctx
-            with urllib.request.urlopen(req, **kw) as resp:
-                return json.loads(resp.read())
-        except Exception as e:
-            last = e
-            continue
-    raise SystemExit(
-        "[error] fetch failed: {}\n  url={}\n  ヒント: `pip3 install certifi` か、"
-        "macOS なら Python の Install Certificates.command を実行してください。".format(last, url)
-    )
+    """jma_http.fetch_json への薄いラッパー。対話セットアップ用に失敗を親切なヒント付きで止める。"""
+    try:
+        return _jma_fetch_json(url, timeout=timeout)
+    except Exception as e:
+        raise SystemExit(
+            "[error] fetch failed: {}\n  url={}\n  ヒント: `pip3 install certifi` か、"
+            "macOS なら Python の Install Certificates.command を実行してください。".format(e, url)
+        )
 
 
 def load_area(refresh=False):
@@ -180,9 +154,15 @@ def main():
     ap.add_argument("--refresh", action="store_true", help="area.json を取り直す")
     ap.add_argument("--order", type=int, default=99, help="config cities[] の order 値")
     ap.add_argument("--write", action="store_true",
-                    help="items/config.json の cities[] に upsert する (既存 map 座標は保持)")
+                    help="<out-dir>/config.json の cities[] に upsert する (既存 map 座標は保持)")
     ap.add_argument("--set-default", action="store_true",
                     help="--write と併用。この都市を defaultCity に設定する")
+    # スクリプト移動 (2026-07-05) で `HERE/items` は使えなくなったため、
+    # dataPath (= items dir) を明示するように変更。scheduler 経由の呼び出しは無く、
+    # SKILL.md §B 手動実行で使う。out-dir は必須（作者/取り込みでベースパスが違うため）。
+    ap.add_argument("--out-dir", required=True,
+                    help="config.json を書く items ディレクトリ。<collection_paths> の {dataPath} を渡す "
+                         "(作者=data/jma-weather/items / 取り込み=data/collections/<slug>/items)")
     args = ap.parse_args()
 
     area = load_area(refresh=args.refresh)
@@ -267,13 +247,14 @@ def main():
     print(json.dumps(cfg, ensure_ascii=False, indent=2))
 
     if args.write:
-        write_config_entry(cfg, set_default=args.set_default, no_amedas=args.no_amedas)
+        write_config_entry(cfg, out_dir=args.out_dir,
+                           set_default=args.set_default, no_amedas=args.no_amedas)
 
 
-def write_config_entry(cfg, set_default=False, no_amedas=False):
-    """resolve 結果を items/config.json の cities[] に upsert する。
+def write_config_entry(cfg, out_dir, set_default=False, no_amedas=False):
+    """resolve 結果を <out_dir>/config.json の cities[] に upsert する。
     同 office の既存エントリがあれば codes を更新し、map 座標は保持する。"""
-    items_dir = os.path.join(HERE, "items")
+    items_dir = str(resolve_out_dir(out_dir))
     os.makedirs(items_dir, exist_ok=True)
     path = os.path.join(items_dir, "config.json")
     if os.path.exists(path):
