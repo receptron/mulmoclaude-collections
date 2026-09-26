@@ -1,0 +1,13 @@
+{
+  "files": [
+    "SKILL.md",
+    "meta.json",
+    "schema.json",
+    "seed/items/kichijoji.json",
+    "seed/items/nakano.json",
+    "seed/items/oimachi.json",
+    "seed/items/sangenjaya.json",
+    "templates/refresh-rent.md",
+    "views/compare-dashboard.html"
+  ]
+}

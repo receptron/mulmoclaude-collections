@@ -1,0 +1,10 @@
+{
+  "author": "mutsuki800",
+  "slug": "area-candidates",
+  "version": "1.0.0",
+  "title": "エリア候補",
+  "description": "上京の転居先候補となる駅・エリアを比較する台帳。通勤条件・家賃相場（履歴付き）・終電/始発・防災（治安/浸水）・生活インフラ・時間帯別の体感情報を1レコードに集約し、比較ダッシュボードで並べて見比べられる。",
+  "tags": ["housing", "relocation", "tokyo", "personal"],
+  "license": "MIT",
+  "dataConsent": true
+}

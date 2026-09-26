@@ -1,0 +1,277 @@
+{
+  "title": "エリア候補",
+  "icon": "location_city",
+  "dataPath": "data/area-candidates/items",
+  "primaryKey": "id",
+  "fields": {
+    "id": {
+      "type": "string",
+      "label": "ID",
+      "primary": true
+    },
+    "wardName": {
+      "type": "string",
+      "label": "区名"
+    },
+    "stationName": {
+      "type": "string",
+      "label": "最寄り駅名"
+    },
+    "lines": {
+      "type": "string",
+      "label": "使える路線（複数、読点区切り）"
+    },
+    "commuteMinutes": {
+      "type": "number",
+      "label": "勤務先までの所要時間（分）"
+    },
+    "transfers": {
+      "type": "number",
+      "label": "乗り換え回数"
+    },
+    "rentRoomOnly": {
+      "type": "string",
+      "label": "1R家賃（万円、幅可、最新値）"
+    },
+    "rentWithKitchen": {
+      "type": "string",
+      "label": "1K家賃（万円、幅可、最新値）"
+    },
+    "rentSource": {
+      "type": "string",
+      "label": "家賃：出典（最新）"
+    },
+    "rentSurveyDate": {
+      "type": "string",
+      "label": "家賃：調査時点（最新）"
+    },
+    "rentStatus": {
+      "type": "enum",
+      "label": "家賃：確定/推定（最新）",
+      "values": [
+        "✅ 確定",
+        "⚠️ 推定"
+      ]
+    },
+    "rentHistory": {
+      "type": "table",
+      "label": "家賃履歴（調査ごとに追記、上書きしない）",
+      "of": {
+        "date": {
+          "type": "string",
+          "label": "調査日"
+        },
+        "roomOnly": {
+          "type": "string",
+          "label": "1R"
+        },
+        "withKitchen": {
+          "type": "string",
+          "label": "1K"
+        },
+        "source": {
+          "type": "string",
+          "label": "出典"
+        }
+      }
+    },
+    "lastTrainDepartTime": {
+      "type": "string",
+      "label": "終電：新宿発時刻"
+    },
+    "lastTrainArriveTime": {
+      "type": "string",
+      "label": "終電：最寄り駅着時刻"
+    },
+    "lastTrainFareYen": {
+      "type": "number",
+      "label": "終電：運賃（円）"
+    },
+    "firstTrainTime": {
+      "type": "string",
+      "label": "始発時刻"
+    },
+    "commuteSource": {
+      "type": "string",
+      "label": "終電情報：出典"
+    },
+    "commuteSurveyDate": {
+      "type": "string",
+      "label": "終電情報：調査時点"
+    },
+    "commuteStatus": {
+      "type": "enum",
+      "label": "終電情報：確定/推定",
+      "values": [
+        "✅ 確定",
+        "⚠️ 推定"
+      ]
+    },
+    "taxiFareEstimate": {
+      "type": "string",
+      "label": "終電後のタクシー代目安（円、幅可）"
+    },
+    "taxiFareSource": {
+      "type": "string",
+      "label": "タクシー代：出典"
+    },
+    "taxiFareSurveyDate": {
+      "type": "string",
+      "label": "タクシー代：調査時点"
+    },
+    "taxiFareStatus": {
+      "type": "enum",
+      "label": "タクシー代：確定/推定",
+      "values": [
+        "✅ 確定",
+        "⚠️ 推定"
+      ]
+    },
+    "wardSafetyLevel": {
+      "type": "enum",
+      "label": "治安：区の水準（23区内での相対位置）",
+      "values": [
+        "上位（治安良好）",
+        "中位",
+        "下位（要注意）"
+      ]
+    },
+    "stationSafetyLevel": {
+      "type": "enum",
+      "label": "治安：駅周辺の評価（区内での相対位置）",
+      "values": [
+        "上位（治安良好）",
+        "中位",
+        "下位（要注意）"
+      ]
+    },
+    "crimeTendency": {
+      "type": "text",
+      "label": "治安：犯罪の主な傾向（自転車盗中心／繁華街トラブル など。個別事件は書かない）"
+    },
+    "violentCrimeLevel": {
+      "type": "enum",
+      "label": "治安：凶悪犯罪の発生水準",
+      "values": [
+        "低い",
+        "平均的",
+        "高い"
+      ]
+    },
+    "nightAtmosphere": {
+      "type": "text",
+      "label": "治安：夜間の雰囲気（街灯・人通り・駅前の客層）"
+    },
+    "safetySource": {
+      "type": "string",
+      "label": "治安情報：出典"
+    },
+    "safetySurveyDate": {
+      "type": "string",
+      "label": "治安情報：調査時点"
+    },
+    "wardRivers": {
+      "type": "string",
+      "label": "浸水：区内の中小河川名（複数、読点区切り）"
+    },
+    "stationFloodRisk": {
+      "type": "enum",
+      "label": "浸水：駅周辺のリスク",
+      "values": [
+        "要現地確認",
+        "低い",
+        "高い"
+      ]
+    },
+    "floodHistory": {
+      "type": "text",
+      "label": "浸水：過去の浸水履歴（自治体公開の町丁目別実績）"
+    },
+    "floodCheckReminder": {
+      "type": "text",
+      "label": "浸水：最終判定の確認方法（メモ）"
+    },
+    "floodSource": {
+      "type": "string",
+      "label": "浸水情報：出典"
+    },
+    "floodSurveyDate": {
+      "type": "string",
+      "label": "浸水情報：調査時点"
+    },
+    "shelterWalkMinutes": {
+      "type": "number",
+      "label": "最寄り避難所までの徒歩分数"
+    },
+    "supermarket24hCount": {
+      "type": "number",
+      "label": "24時間営業スーパーの数"
+    },
+    "weekdayClinicCount": {
+      "type": "number",
+      "label": "平日診療している内科・歯科の数"
+    },
+    "goodReputation": {
+      "type": "text",
+      "label": "街の良い評判"
+    },
+    "complaints": {
+      "type": "text",
+      "label": "街の不満点"
+    },
+    "morningNote": {
+      "type": "text",
+      "label": "朝の様子（メモ）"
+    },
+    "morningPhoto": {
+      "type": "image",
+      "label": "朝の写真"
+    },
+    "noonNote": {
+      "type": "text",
+      "label": "昼の様子（メモ）"
+    },
+    "noonPhoto": {
+      "type": "image",
+      "label": "昼の写真"
+    },
+    "nightNote": {
+      "type": "text",
+      "label": "夜の様子（メモ）"
+    },
+    "nightPhoto": {
+      "type": "image",
+      "label": "夜の写真"
+    },
+    "midnightNote": {
+      "type": "text",
+      "label": "深夜の様子（メモ）"
+    },
+    "midnightPhoto": {
+      "type": "image",
+      "label": "深夜の写真"
+    },
+    "notes": {
+      "type": "text",
+      "label": "総合メモ"
+    }
+  },
+  "views": [
+    {
+      "id": "compare-dashboard",
+      "label": "比較ダッシュボード",
+      "icon": "view_agenda",
+      "file": "views/compare-dashboard.html",
+      "capabilities": [
+        "read"
+      ]
+    }
+  ],
+  "ingest": {
+    "kind": "agent",
+    "schedule": "daily",
+    "atHour": 0,
+    "role": "general",
+    "template": "templates/refresh-rent.md"
+  }
+}
